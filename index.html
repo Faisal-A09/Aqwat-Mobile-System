@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Aqwat Mobile — FCM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg0:#0a0f16; --bg1:#0f1923; --bg2:#16232f; --bg3:#1c2c3a;
+  --line:#22384a; --line2:#2c4659;
+  --txt:#d7e3ee; --muted:#7f95a8; --dim:#5c7081;
+  --accent:#27c6ff; --accent2:#0e9fd6;
+  --ele:#f5a623; --aws:#37b6ff; --ref:#b06bdc;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg0);color:var(--txt);
+  font-family:'Inter',system-ui,sans-serif;font-size:15px;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+.mono{font-family:'Rajdhani','Inter',monospace}
+button{font-family:inherit;cursor:pointer;color:var(--txt);background:none;border:0}
+
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+
+/* ---- top bar ---- */
+#top{display:flex;align-items:center;gap:10px;padding:11px 14px;flex-shrink:0;
+  padding-top:calc(11px + env(safe-area-inset-top));
+  background:linear-gradient(180deg,#0f1c28,#0b141d);border-bottom:1px solid var(--line);z-index:20}
+#logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#0c6fa0);
+  display:grid;place-items:center;font-family:'Rajdhani';font-weight:700;color:#03222e;font-size:15px;
+  box-shadow:0 0 16px rgba(39,198,255,.4);flex-shrink:0}
+#title{font-family:'Rajdhani';font-weight:700;font-size:17px;letter-spacing:.4px;line-height:1}
+#title small{display:block;color:var(--muted);font-size:9.5px;letter-spacing:1.4px;margin-top:2px}
+.tb{margin-inline-start:auto;width:38px;height:38px;border-radius:10px;background:var(--bg2);
+  border:1px solid var(--line2);display:grid;place-items:center;font-size:16px}
+.tb+.tb{margin-inline-start:8px}
+
+/* ---- section title strip ---- */
+#strip{display:flex;align-items:center;gap:8px;padding:9px 14px;flex-shrink:0;
+  background:var(--bg1);border-bottom:1px solid var(--line)}
+#strip .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+#strip b{font-family:'Rajdhani';font-size:14px;letter-spacing:.4px}
+#strip span{color:var(--muted);font-size:11.5px;margin-inline-start:auto;font-family:'Rajdhani'}
+
+/* ---- stage ---- */
+#stage{flex:1;position:relative;min-height:0;background:var(--bg0)}
+iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg0)}
+#spin{position:absolute;inset:0;display:grid;place-items:center;background:var(--bg0);z-index:2}
+#spin.hide{display:none}
+#spin .s{width:40px;height:40px;border:4px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#ph{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:28px;gap:13px;background:var(--bg0)}
+#ph.show{display:flex}
+#ph .i{width:60px;height:60px;border-radius:15px;display:grid;place-items:center;font-family:'Rajdhani';font-weight:700;font-size:19px;color:#06141c}
+#ph h2{font-size:17px;font-family:'Rajdhani'}
+#ph p{color:var(--muted);font-size:13px;line-height:1.6;max-width:330px}
+#ph code{background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--accent);font-family:'Rajdhani'}
+
+/* ---- bottom tabs ---- */
+#tabs{display:flex;flex-shrink:0;background:linear-gradient(0deg,#0f1c28,#0b141d);
+  border-top:1px solid var(--line);padding:7px 6px calc(7px + env(safe-area-inset-bottom))}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;border-radius:11px;
+  color:var(--muted);font-family:'Rajdhani';font-size:11px;letter-spacing:.4px}
+.tab.on{color:var(--accent);background:rgba(39,198,255,.09)}
+.tab i{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;font-weight:700;font-size:11px;color:#06141c}
+
+/* ---- welcome ---- */
+#welcome{position:fixed;inset:0;z-index:90;padding:30px;text-align:center;
+  background:radial-gradient(700px 420px at 50% -8%,#11283a,#080d13 70%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+#welcome.hide{opacity:0;pointer-events:none;transition:opacity .45s}
+#welcome .wl{width:66px;height:66px;border-radius:18px;background:linear-gradient(135deg,var(--accent),#0c6fa0);
+  display:grid;place-items:center;font-family:'Rajdhani';font-weight:700;color:#03222e;font-size:28px;
+  box-shadow:0 0 36px rgba(39,198,255,.5);margin-bottom:16px}
+#welcome .hi{font-size:27px;font-weight:700;font-family:'Rajdhani';letter-spacing:.5px;
+  background:linear-gradient(90deg,#fff,#9fdcff);-webkit-background-clip:text;background-clip:text;color:transparent}
+#welcome .tg{color:var(--accent);font-family:'Rajdhani';letter-spacing:2px;font-size:11px;margin-top:3px}
+#welcome p{color:var(--muted);font-size:13.5px;max-width:330px;margin-top:9px;line-height:1.65}
+#welcome .rows{display:flex;flex-direction:column;gap:8px;margin:20px 0 6px;width:100%;max-width:300px}
+#welcome .rw{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:1px solid var(--line);
+  border-radius:12px;padding:10px 13px;font-family:'Rajdhani';font-size:13px;text-align:left}
+#welcome .rw i{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+#enter{margin-top:14px;background:linear-gradient(180deg,var(--accent),var(--accent2));color:#04222e;
+  font-weight:700;font-family:'Rajdhani';letter-spacing:1px;font-size:15px;padding:13px 38px;border-radius:12px;
+  box-shadow:0 0 22px rgba(39,198,255,.4)}
+
+/* ---- sheets (search + refrigerant) ---- */
+.sheet{position:fixed;inset:0;z-index:80;display:none;flex-direction:column;justify-content:flex-end;
+  background:rgba(5,9,14,.66);backdrop-filter:blur(3px)}
+.sheet.show{display:flex}
+.sheet .pane{background:linear-gradient(180deg,#10202c,#0c1620);border-top:1px solid var(--line2);
+  border-radius:18px 18px 0 0;max-height:86vh;display:flex;flex-direction:column;animation:up .25s ease}
+@keyframes up{from{transform:translateY(40px)}}
+.sheet .ph2{display:flex;align-items:center;gap:9px;padding:14px 16px;border-bottom:1px solid var(--line);font-family:'Rajdhani';font-size:15px}
+.sheet .ph2 .x{margin-inline-start:auto;width:32px;height:32px;border-radius:8px;background:var(--bg2);border:1px solid var(--line2);font-size:15px}
+.sheet .body{overflow-y:auto;padding:13px 15px;-webkit-overflow-scrolling:touch}
+#sInput{width:100%;background:var(--bg0);border:1px solid var(--line2);border-radius:11px;
+  padding:13px 14px;color:var(--txt);font-size:16px;font-family:'Inter'}
+#sInput:focus{outline:none;border-color:var(--accent)}
+#sRes{margin-top:11px;display:flex;flex-direction:column;gap:5px}
+.r{display:flex;align-items:center;gap:11px;padding:12px 11px;border-radius:11px;background:var(--bg1);border:1px solid var(--line);width:100%;text-align:left}
+.r .k{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-family:'Rajdhani';font-weight:700;font-size:11px;color:#06141c;flex-shrink:0}
+.r b{display:block;font-family:'Rajdhani';font-size:14px}
+.r small{color:var(--muted);font-size:11.5px}
+.r .bd{margin-inline-start:auto;font-family:'Rajdhani';font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+.rfs{margin-bottom:15px}
+.rfs .h{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.rfs .rc{font-family:'Rajdhani';font-weight:700;font-size:13px;padding:3px 11px;border-radius:8px;color:#06141c}
+.rfs .rn{color:var(--muted);font-size:11.5px}
+.rfs table{width:100%;border-collapse:collapse;font-size:12.5px}
+.rfs td{padding:7px 9px;border-bottom:1px solid var(--line)}
+.rfs td:first-child{font-family:'Rajdhani';font-weight:600}
+.rfs td:last-child{color:var(--muted);text-align:right}
+</style>
+</head>
+<body>
+
+<div id="welcome">
+  <div class="wl">A</div>
+  <div class="hi">Hello, Engineer 👋</div>
+  <div class="tg">AQWAT · MOBILE</div>
+  <p>Your FCM operations platform — Electrical, Water &amp; Air, and Reflection systems, in your pocket.</p>
+  <div class="rows">
+    <div class="rw"><i style="background:var(--ele)"></i>Electrical — power &amp; monitoring</div>
+    <div class="rw"><i style="background:var(--aws)"></i>Water &amp; Air — RO, fire, air</div>
+    <div class="rw"><i style="background:var(--ref)"></i>Reflection — MR4 &amp; Hatchback</div>
+  </div>
+  <button id="enter">Enter →</button>
+</div>
+
+<div id="app">
+  <div id="top">
+    <div id="logo">A</div>
+    <div id="title">Aqwat<small>FCM OPERATIONS</small></div>
+    <button class="tb" id="bSearch">🔎</button>
+    <button class="tb" id="bRef">❄</button>
+  </div>
+
+  <div id="strip"><span class="dot" id="stripDot"></span><b id="stripName">MR4</b><span id="stripSub"></span></div>
+
+  <div id="stage">
+    <div id="spin"><div class="s"></div></div>
+    <iframe id="frame" title="Section"></iframe>
+    <div id="ph"><div class="i" id="phi">?</div><h2 id="pht"></h2><p id="phx"></p></div>
+  </div>
+
+  <div id="tabs">
+    <button class="tab" data-sec="ele"><i style="background:var(--ele)">E</i>Electrical</button>
+    <button class="tab" data-sec="aws"><i style="background:var(--aws)">W</i>Water·Air</button>
+    <button class="tab" data-sec="mr4"><i style="background:var(--ref)">M</i>MR4</button>
+    <button class="tab" data-sec="hatchback"><i style="background:var(--ref)">H</i>Hatchback</button>
+  </div>
+</div>
+
+<!-- search sheet -->
+<div class="sheet" id="shSearch"><div class="pane">
+  <div class="ph2">🔎 Search<button class="x" data-close>✕</button></div>
+  <div class="body"><input id="sInput" placeholder="Sections, devices, refrigerants…" autocomplete="off"><div id="sRes"></div></div>
+</div></div>
+
+<!-- refrigerant sheet -->
+<div class="sheet" id="shRef"><div class="pane">
+  <div class="ph2">❄ Refrigerant Index<button class="x" data-close>✕</button></div>
+  <div class="body" id="refBody"></div>
+</div></div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const SECTIONS={
+  ele:{file:'ele.html',label:'Electrical',sub:'Power · monitoring',col:'#f5a623',abbr:'ELE'},
+  aws:{file:'aws.html',label:'Water & Air',sub:'RO · fire · air',col:'#37b6ff',abbr:'AWS'},
+  mr4:{file:'mr4.html',label:'MR4 — Cooling',sub:'R-22 · SCADA',col:'#b06bdc',abbr:'MR4'},
+  hatchback:{file:'hatchback.html',label:'Hatchback — HVAC',sub:'AC units',col:'#b06bdc',abbr:'HB'},
+};
+let current=null;
+function load(sec){
+  const S=SECTIONS[sec]; if(!S) return;
+  current=sec;
+  $$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.sec===sec));
+  $('#stripDot').style.background=S.col; $('#stripName').textContent=S.label; $('#stripSub').textContent=S.sub;
+  const f=$('#frame'),sp=$('#spin'),ph=$('#ph');
+  ph.classList.remove('show'); sp.classList.remove('hide'); f.style.visibility='hidden';
+  f.onload=()=>{ sp.classList.add('hide'); f.style.visibility='visible'; ph.classList.remove('show'); };
+  f.onerror=()=>{ sp.classList.add('hide'); placeholder(sec); };
+  f.src=S.file;
+  clearTimeout(load._t);
+  load._t=setTimeout(()=>{ sp.classList.add('hide'); if(f.style.visibility==='hidden') placeholder(sec); },3500);
+}
+function placeholder(sec){
+  const S=SECTIONS[sec];
+  $('#frame').style.visibility='hidden';
+  $('#phi').style.background=S.col; $('#phi').textContent=S.abbr;
+  $('#pht').textContent=S.label;
+  $('#phx').innerHTML=`Couldn't load <code>${S.file}</code>. Keep all Aqwat files together in one folder.`;
+  $('#ph').classList.add('show');
+}
+$$('.tab').forEach(t=>t.onclick=()=>load(t.dataset.sec));
+
+/* search */
+const HB=[['AHU','Air Handling Unit','R-407'],['Package Unit','Packaged AC','R-407'],['Split Unit','Split AC','R-410'],
+['Cold Store 3rd Floor','Cold storage','R-507'],['Ground Floor Cold Store','Cold storage','R-404'],
+['FCU','Fan Coil Unit','R-410'],['CRAC','Computer Room AC','R-407'],['FAU','Fresh Air · Galco','Freon-free']];
+const IDX=[
+ {t:'Electrical',s:'Power · monitoring',sec:'ele',k:'E',col:'#f5a623',b:'Section'},
+ {t:'Water & Air',s:'RO · fire · air',sec:'aws',k:'W',col:'#37b6ff',b:'Section'},
+ {t:'MR4 — Cooling',s:'R-22 · SCADA',sec:'mr4',k:'M',col:'#b06bdc',b:'Section'},
+ {t:'Hatchback — HVAC',s:'AC units',sec:'hatchback',k:'H',col:'#b06bdc',b:'Section'},
+ ...HB.map(x=>({t:x[0],s:x[1]+' · '+x[2],sec:'hatchback',k:'H',col:'#b06bdc',b:x[2]})),
+ {t:'R-22',s:'MR4 cooling',sec:'mr4',k:'❄',col:'#ff6a3d',b:'Refrigerant'},
+ {t:'R-407',s:'AHU · Package · CRAC',sec:'hatchback',k:'❄',col:'#f5a623',b:'Refrigerant'},
+ {t:'R-410',s:'Split · FCU',sec:'hatchback',k:'❄',col:'#37b6ff',b:'Refrigerant'},
+ {t:'R-507',s:'Cold Store 3rd Floor',sec:'hatchback',k:'❄',col:'#b06bdc',b:'Refrigerant'},
+ {t:'R-404',s:'Ground Floor Cold Store',sec:'hatchback',k:'❄',col:'#2ee06a',b:'Refrigerant'},
+ {t:'Galco (Freon-free)',s:'FAU fresh air',sec:'hatchback',k:'❄',col:'#1ee0e0',b:'Refrigerant'},
+];
+function search(q){
+  q=q.trim().toLowerCase();
+  const res=!q?IDX:IDX.filter(x=>(x.t+' '+x.s+' '+x.b).toLowerCase().includes(q));
+  $('#sRes').innerHTML = res.length? res.map((x,i)=>`<button class="r" data-i="${i}">
+    <span class="k" style="background:${x.col}">${x.k}</span>
+    <span><b>${x.t}</b><small>${x.s}</small></span><span class="bd">${x.b}</span></button>`).join('')
+    : '<div style="color:var(--dim);text-align:center;padding:22px;font-size:13px">No matches.</div>';
+  $$('#sRes .r').forEach(b=>b.onclick=()=>{ closeSheets(); load(res[+b.dataset.i].sec); });
+}
+/* refrigerant index */
+const RMAP=[
+ {ref:'R-22',col:'#ff6a3d',sys:'Reflection · MR4',d:[['MR4 Cooling System','R-22 circuit — 15 compressors, 9 condensers']]},
+ {ref:'R-407',col:'#f5a623',sys:'Reflection · Hatchback',d:[['AHU','Central air handling'],['Package Unit','All-in-one rooftop AC'],['CRAC','Server-room precision AC']]},
+ {ref:'R-410',col:'#37b6ff',sys:'Reflection · Hatchback',d:[['Split Unit','Room AC'],['FCU','Fan coil']]},
+ {ref:'R-507',col:'#b06bdc',sys:'Reflection · Hatchback',d:[['Cold Store — 3rd Floor','Low-temperature storage']]},
+ {ref:'R-404',col:'#2ee06a',sys:'Reflection · Hatchback',d:[['Ground Floor Cold Store','Low-temperature storage']]},
+ {ref:'Freon-free · Galco',col:'#1ee0e0',sys:'Reflection · Hatchback',d:[['FAU','Fresh air — cold Galco flow, no Freon']]},
+];
+$('#refBody').innerHTML=RMAP.map(r=>`<div class="rfs"><div class="h"><span class="rc" style="background:${r.col}">${r.ref}</span><span class="rn">${r.sys}</span></div>
+  <table>${r.d.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`).join('')}</table></div>`).join('');
+
+function openSheet(id){ $(id).classList.add('show'); if(id==='#shSearch'){const i=$('#sInput');i.value='';search('');setTimeout(()=>i.focus(),60);} }
+function closeSheets(){ $$('.sheet').forEach(s=>s.classList.remove('show')); }
+$('#bSearch').onclick=()=>openSheet('#shSearch');
+$('#bRef').onclick=()=>openSheet('#shRef');
+$$('[data-close]').forEach(b=>b.onclick=closeSheets);
+$$('.sheet').forEach(s=>s.onclick=e=>{ if(e.target===s) closeSheets(); });
+$('#sInput').addEventListener('input',e=>search(e.target.value));
+
+$('#enter').onclick=()=>{
+  $('#welcome').classList.add('hide');
+  setTimeout(()=>$('#welcome').style.display='none',450);
+  load('mr4');
+};
+</script>
+</body>
+</html>

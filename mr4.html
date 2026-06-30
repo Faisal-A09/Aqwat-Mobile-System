@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MR4 Cooling System — 3D Interactive Training Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg0:#0a0f16; --bg1:#0f1923; --bg2:#16232f; --bg3:#1c2c3a;
+  --line:#22384a; --line2:#2c4659;
+  --txt:#d7e3ee; --muted:#7f95a8; --dim:#5c7081;
+  --accent:#27c6ff; --accent2:#0e9fd6;
+  --c41:#2f5cf0; --c12:#37b6ff; --c4:#2ee06a;
+  --z8n:#5b8def; --z8p:#f5a623; --z2:#b06bdc; --z25:#ff5a4d;
+  --run:#22d27e; --stop:#5c7081; --alarm:#ff4d4f; --maint:#ffb020;
+  --ref:#ff6a3d; --gly:#1ee0e0;
+  --shadow:0 8px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);
+  font-family:'Inter',system-ui,sans-serif;font-size:14px;-webkit-font-smoothing:antialiased}
+.mono,.tag,.val,.kv b{font-family:'Rajdhani','Inter',monospace;font-variant-numeric:tabular-nums}
+#app{position:fixed;inset:0;display:flex;flex-direction:column}
+canvas{display:block}
+button{font-family:inherit;cursor:pointer;color:var(--txt);background:var(--bg2);
+  border:1px solid var(--line2);border-radius:7px;padding:7px 11px;font-size:13px;
+  transition:.15s;letter-spacing:.2px}
+button:hover{background:var(--bg3);border-color:var(--accent2)}
+button.on{background:linear-gradient(180deg,var(--accent),var(--accent2));color:#04222e;
+  border-color:var(--accent);font-weight:700;box-shadow:0 0 14px rgba(39,198,255,.35)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- TOP BAR ---------- */
+#topbar{display:flex;align-items:center;gap:14px;padding:9px 16px;background:linear-gradient(180deg,#0f1c28,#0b141d);
+  border-bottom:1px solid var(--line);z-index:30;box-shadow:0 4px 18px rgba(0,0,0,.4)}
+#brand{display:flex;align-items:center;gap:11px;min-width:230px}
+#logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#0c6fa0);
+  display:grid;place-items:center;font-family:'Rajdhani';font-weight:700;color:#03222e;font-size:17px;
+  box-shadow:0 0 18px rgba(39,198,255,.4)}
+#brand h1{font-size:15px;font-weight:700;line-height:1.1}
+#brand small{color:var(--muted);font-size:10.5px;font-family:'Rajdhani';letter-spacing:1px}
+.tgrp{display:flex;gap:6px;align-items:center}
+.tgrp .lbl{color:var(--dim);font-size:11px;font-family:'Rajdhani';letter-spacing:1px;margin-inline-end:2px}
+.sep{width:1px;height:30px;background:var(--line2);margin:0 4px}
+.spacer{flex:1}
+#clock{font-family:'Rajdhani';font-size:15px;color:var(--accent);letter-spacing:1px;min-width:64px;text-align:center}
+.amb{display:flex;flex-direction:column;align-items:center;line-height:1;font-family:'Rajdhani'}
+.amb b{font-size:18px;color:var(--z8p)} .amb span{font-size:10px;color:var(--dim)}
+
+/* ---------- MAIN LAYOUT ---------- */
+#main{flex:1;position:relative;display:flex;min-height:0}
+#scene-wrap{flex:1;position:relative;min-width:0}
+#scene{position:absolute;inset:0}
+#hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(10,16,22,.72);
+  border:1px solid var(--line);border-radius:20px;padding:6px 14px;color:var(--muted);font-size:12px;
+  backdrop-filter:blur(6px);z-index:6;pointer-events:none}
+
+/* side panels */
+.panel{background:linear-gradient(180deg,#0e1a25,#0b141d);border:1px solid var(--line);border-radius:11px;
+  box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+.panel>h3{font-size:12px;letter-spacing:1.4px;color:var(--accent);padding:9px 12px;
+  border-bottom:1px solid var(--line);font-family:'Rajdhani';font-weight:700;display:flex;
+  align-items:center;gap:7px;text-transform:uppercase;flex-shrink:0;background:rgba(39,198,255,.04)}
+.panel>h3 .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+
+#left{position:absolute;top:12px;left:12px;width:262px;display:flex;flex-direction:column;gap:10px;
+  z-index:10;max-height:calc(100% - 24px)}
+#right{position:absolute;top:12px;right:12px;width:286px;display:flex;flex-direction:column;gap:10px;
+  z-index:10;max-height:calc(100% - 24px)}
+
+/* dashboard stat grid */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:10px}
+.stat{background:var(--bg1);border:1px solid var(--line);border-radius:8px;padding:8px 9px}
+.stat .l{font-size:10px;color:var(--muted);letter-spacing:.5px}
+.stat .v{font-family:'Rajdhani';font-size:21px;font-weight:700;line-height:1.15;margin-top:2px}
+.stat .v small{font-size:11px;color:var(--dim);font-weight:500}
+.stat.wide{grid-column:1/3}
+.bar{height:6px;border-radius:4px;background:var(--bg3);overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:4px;transition:width .4s}
+
+/* circuit rows */
+.circuits{padding:4px 10px 10px}
+.crow{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:8px;margin-top:6px;background:var(--bg1);
+  border:1px solid var(--line)}
+.crow .sw{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.crow .nm{font-family:'Rajdhani';font-weight:700;font-size:14px;min-width:52px}
+.crow .meta{flex:1;font-size:11px;color:var(--muted);line-height:1.3}
+.crow .meta b{color:var(--txt);font-family:'Rajdhani'}
+.crow .cnt{font-family:'Rajdhani';font-size:13px;color:var(--run)}
+
+/* mini map */
+#minimap{padding:8px}
+#mmcanvas{width:100%;height:150px;background:var(--bg0);border:1px solid var(--line);border-radius:8px;display:block}
+
+/* alarms */
+#alarms{flex:1;min-height:80px}
+#alarmlist{overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:5px}
+.al{display:flex;gap:8px;align-items:flex-start;padding:7px 9px;border-radius:7px;font-size:12px;
+  border:1px solid;animation:fade .3s}
+.al.crit{background:rgba(255,77,79,.09);border-color:rgba(255,77,79,.4);color:#ffb0b1}
+.al.warn{background:rgba(255,176,32,.09);border-color:rgba(255,176,32,.38);color:#ffd58a}
+.al .ic{font-family:'Rajdhani';font-weight:700}
+.al .tx b{display:block;color:#fff;font-size:12px}
+.al .tx span{font-size:11px;opacity:.8}
+.noal{color:var(--run);font-size:12px;text-align:center;padding:14px;opacity:.7}
+@keyframes fade{from{opacity:0;transform:translateY(-4px)}}
+
+/* inspector */
+#inspector{flex:1;min-height:120px}
+#inspbody{overflow-y:auto;padding:11px;font-size:13px}
+.insp-empty{color:var(--dim);text-align:center;padding:26px 10px;font-size:13px;line-height:1.7}
+.insp-empty .big{font-size:30px;display:block;margin-bottom:8px;opacity:.5}
+.insp-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.insp-head .ico{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;font-family:'Rajdhani';
+  font-weight:700;font-size:15px;color:#06222e;flex-shrink:0}
+.insp-head .t b{font-size:15px;display:block;font-family:'Rajdhani';letter-spacing:.5px}
+.insp-head .t span{font-size:11px;color:var(--muted)}
+.kv{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(34,56,74,.5);font-size:12.5px}
+.kv:last-child{border-bottom:0}
+.kv span{color:var(--muted)}
+.kv b{font-family:'Rajdhani';font-size:14px;font-weight:600}
+.pill{padding:2px 9px;border-radius:11px;font-size:11px;font-weight:700;font-family:'Rajdhani';letter-spacing:.5px}
+.pill.run{background:rgba(34,210,126,.16);color:var(--run)}
+.pill.stop{background:rgba(92,112,129,.2);color:#9fb0bf}
+.pill.alarm{background:rgba(255,77,79,.18);color:#ff7173}
+.pill.maint{background:rgba(255,176,32,.16);color:var(--maint)}
+.insp-note{margin-top:10px;padding:9px;background:var(--bg1);border:1px solid var(--line);border-radius:8px;
+  font-size:11.5px;color:var(--muted);line-height:1.6}
+
+/* bottom dock: charts */
+#dock{position:absolute;bottom:0;left:0;right:0;z-index:12;display:flex;flex-direction:column;
+  pointer-events:none}
+#dock .inner{margin:0 308px 0 286px;background:linear-gradient(180deg,#0e1a25ee,#0b141df2);
+  border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;box-shadow:0 -8px 26px rgba(0,0,0,.4);
+  pointer-events:auto;transition:transform .3s}
+#dock.collapsed .inner{transform:translateY(calc(100% - 34px))}
+.dock-head{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.dock-head h3{font-size:12px;letter-spacing:1.2px;color:var(--accent);font-family:'Rajdhani';font-weight:700}
+.dock-head .chev{margin-inline-start:auto;color:var(--muted);font-family:'Rajdhani';transition:.3s}
+#dock.collapsed .chev{transform:rotate(180deg)}
+.charts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:10px 14px}
+.chartbox{background:var(--bg0);border:1px solid var(--line);border-radius:9px;padding:8px 6px 4px;overflow:hidden}
+.chartbox .ct{font-size:11px;color:var(--muted);padding:0 6px 4px;font-family:'Rajdhani';letter-spacing:.5px;
+  display:flex;justify-content:space-between}
+.chartbox .ct b{font-family:'Rajdhani'}
+.cwrap{position:relative;width:100%;height:104px}
+.cwrap canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+
+/* modals */
+.modal-bg{position:fixed;inset:0;background:rgba(5,9,14,.74);z-index:80;display:none;
+  align-items:center;justify-content:center;backdrop-filter:blur(4px);animation:fade .2s}
+.modal-bg.show{display:flex}
+.modal{background:linear-gradient(180deg,#10202c,#0c1620);border:1px solid var(--line2);border-radius:14px;
+  max-width:760px;width:92%;max-height:84vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+.modal h2{font-size:16px;padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.modal h2 .x{margin-inline-start:auto;background:var(--bg2);border:1px solid var(--line2);width:30px;height:30px;
+  border-radius:7px;font-size:16px;line-height:1}
+.modal .body{overflow-y:auto;padding:18px;font-size:13.5px;line-height:1.7}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--accent);font-family:'Rajdhani';letter-spacing:.5px;font-weight:600;background:rgba(39,198,255,.05)}
+td .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-inline-end:6px;vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+.chem{display:flex;gap:12px;padding:11px;background:var(--bg1);border:1px solid var(--line);border-radius:10px;margin-bottom:9px}
+.chem .badge{font-family:'Rajdhani';font-weight:700;font-size:13px;padding:8px 10px;border-radius:8px;height:fit-content;
+  white-space:nowrap;color:#06222e;text-align:center}
+.chem .d b{display:block;margin-bottom:3px;font-size:13.5px;color:#fff}
+.chem .d span{color:var(--muted);font-size:12.5px}
+
+/* training overlay */
+#training{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);z-index:18;width:min(560px,90%);
+  background:linear-gradient(180deg,#10202cf2,#0b1620f5);border:1px solid var(--accent2);border-radius:13px;
+  box-shadow:0 0 30px rgba(39,198,255,.2),var(--shadow);display:none;overflow:hidden}
+#training.show{display:block;animation:fade .3s}
+#training .th{display:flex;align-items:center;gap:10px;padding:11px 15px;border-bottom:1px solid var(--line);
+  background:rgba(39,198,255,.06)}
+#training .step{font-family:'Rajdhani';font-weight:700;color:var(--accent);background:rgba(39,198,255,.12);
+  width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:15px}
+#training .th b{font-size:15px}
+#training .tb{padding:13px 16px;font-size:13.5px;line-height:1.7;color:var(--txt)}
+#training .tf{display:flex;gap:8px;padding:0 16px 14px;align-items:center}
+#training .prog{flex:1;color:var(--dim);font-size:11px;font-family:'Rajdhani';text-align:center}
+
+/* scenario badge on scene */
+#scenbadge{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:8;display:flex;gap:8px;
+  background:rgba(10,16,22,.7);border:1px solid var(--line);border-radius:20px;padding:5px 14px;backdrop-filter:blur(6px)}
+#scenbadge .b{font-family:'Rajdhani';font-size:13px;display:flex;align-items:center;gap:6px;letter-spacing:.5px}
+#scenbadge .b i{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+.legend{position:absolute;bottom:12px;right:12px;z-index:7;background:rgba(10,16,22,.7);border:1px solid var(--line);
+  border-radius:9px;padding:8px 11px;font-size:11px;backdrop-filter:blur(6px);display:none}
+@media(min-width:1280px){.legend{display:block}}
+.legend .lr{display:flex;align-items:center;gap:7px;margin:3px 0;color:var(--muted)}
+.legend .lr i{width:18px;height:3px;border-radius:2px;display:inline-block}
+
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+
+#loader{position:fixed;inset:0;background:var(--bg0);z-index:200;display:grid;place-items:center;transition:opacity .5s}
+#loader.hide{opacity:0;pointer-events:none}
+#loader .ld{text-align:center}
+#loader .sp{width:46px;height:46px;border:4px solid var(--line2);border-top-color:var(--accent);border-radius:50%;
+  margin:0 auto 16px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loader p{color:var(--muted);font-family:'Rajdhani';letter-spacing:2px}
+
+@media(max-width:1100px){
+  #left,#right{position:static;width:auto}
+  #dock{display:none}
+}
+.layerbtn{font-family:'Rajdhani';font-weight:600;font-size:12.5px;padding:6px 10px;border-radius:7px;background:var(--bg2);border:1px solid var(--line);color:var(--muted);cursor:pointer;letter-spacing:.4px}
+.layerbtn:hover{color:#cfe3f5}
+.layerbtn.on{background:#16324a;color:#fff;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.ovl{position:absolute;z-index:9;display:none;background:rgba(12,18,26,.93);border:1px solid var(--line);border-radius:12px;padding:14px;font-size:12.5px;line-height:1.55;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.ovl.show{display:block}
+#logicPanel,#dataPanel{top:60px;right:18px;width:330px}
+#faultPanel{bottom:64px;left:18px;width:370px;max-height:48vh;overflow:auto}
+.ovl h4{font-family:'Rajdhani';font-size:15px;color:var(--accent);margin:0 0 9px;letter-spacing:.5px}
+.ovl-txt{color:var(--muted);margin-bottom:9px}
+.ovl-note{font-size:10.5px;color:var(--muted);margin-top:9px;border-top:1px solid var(--line);padding-top:7px}
+.seqcard{background:var(--bg1);border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin:6px 0}
+.seqflow{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:9px}
+.seqflow span{background:var(--bg1);border:1px solid var(--line);border-radius:6px;padding:4px 7px;font-family:'Rajdhani';font-size:11.5px;white-space:nowrap}
+.seqflow .ar{border:none;background:none;color:var(--accent);padding:0 1px;font-weight:700}
+.dleg{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:9px;font-family:'Rajdhani';font-size:11.5px}
+.ft-card{background:var(--bg1);border:1px solid var(--line);border-left:3px solid #ff4d4f;border-radius:8px;padding:9px 11px;margin:8px 0}
+.ft-title{font-family:'Rajdhani';font-weight:700;color:#ff9a8f;margin-bottom:6px;font-size:14px}
+.ft-step{display:flex;gap:8px;margin:3px 0;font-size:12px}
+.ft-step .ft-l{color:var(--muted);min-width:120px;flex-shrink:0}
+.ft-empty{color:var(--muted);text-align:center;padding:20px 8px}
+#layerLegend{position:absolute;left:18px;bottom:18px;z-index:8;display:none;background:rgba(12,18,26,.9);border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-family:'Rajdhani';font-size:12px;align-items:center;flex-wrap:wrap;gap:2px}
+#layerLegend.show{display:flex}
+#layerLegend b{margin-right:4px;color:var(--accent)}
+#layerLegend i{width:11px;height:11px;border-radius:3px;display:inline-block;margin:0 4px 0 9px}
+.ctrlbadges{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px}
+.cbadge{font-family:'Rajdhani';font-size:11px;padding:3px 7px;border-radius:6px;background:var(--bg1);border:1px solid var(--line);display:flex;align-items:center;gap:5px;color:#cfe0ef}
+.cbadge i{width:7px;height:7px;border-radius:50%;display:inline-block}
+</style>
+</head>
+<body>
+<div id="loader"><div class="ld"><div class="sp"></div><p>INITIALIZING MR4 SYSTEM…</p></div></div>
+<div id="app">
+
+  <!-- ============ TOP BAR ============ -->
+  <div id="topbar">
+    <div id="brand">
+      <div id="logo">MR4</div>
+      <div><h1>MR4 Production Area Cooling System</h1><small>R-22 · SCADA + AKC · INDUSTRIAL TRAINING TWIN</small></div>
+    </div>
+    <div class="sep"></div>
+    <div class="tgrp"><span class="lbl">SEASON</span>
+      <button data-season="summer" class="seasonbtn on">Summer</button>
+      <button data-season="winter" class="seasonbtn">Winter</button>
+    </div>
+    <div class="tgrp"><span class="lbl">PERIOD</span>
+      <button data-tod="morning" class="todbtn">Morning</button>
+      <button data-tod="noon" class="todbtn on">Noon</button>
+      <button data-tod="night" class="todbtn">Night</button>
+    </div>
+    <div class="sep"></div>
+    <div class="tgrp"><span class="lbl">MODE</span>
+      <button data-mode="normal" class="modebtn on">Live</button>
+      <button data-mode="training" class="modebtn">Training</button>
+      <button data-mode="fault" class="modebtn">Faults</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="amb"><b id="ambT">44°</b><span>AMBIENT</span></div>
+    <div id="clock">--:--</div>
+    <button id="btnGuide" title="Quick guide" style="background:#16243a;border:1px solid #2c4a6e;color:#9cc7f5">❓ Guide</button>
+    <button id="btnRun" class="on">⏸ Stop Simulation</button>
+    <div class="tgrp"><span class="lbl">LAYER</span>
+      <button class="layerbtn on" data-layer="process">Process Flow</button>
+      <button class="layerbtn" data-layer="electrical">Electrical Map</button>
+      <button class="layerbtn" data-layer="logic">Control Logic</button>
+      <button class="layerbtn" data-layer="data">Data Flow</button>
+      <button class="layerbtn" data-layer="fault">Fault Trace</button>
+      <button class="layerbtn" data-layer="all">All</button>
+    </div>
+    <button id="btnDiagram" title="Process flow diagram">▦ Process</button>
+    <button id="btnElec" title="Electrical hierarchy diagram">⚡ Hierarchy</button>
+  </div>
+
+  <!-- ============ MAIN ============ -->
+  <div id="main">
+    <div id="scene-wrap">
+      <div id="scene"></div>
+      <div id="scenbadge"></div>
+      <div class="ovl" id="logicPanel">
+        <h4>Control Logic</h4>
+        <div class="seqflow"><span>Temperature Demand</span><span class="ar">→</span><span>PLC Calculation</span><span class="ar">→</span><span>Compressor Staging</span><span class="ar">→</span><span>Pump Operation</span><span class="ar">→</span><span>Valve / Air Cooler</span><span class="ar">→</span><span>Feedback Check</span><span class="ar">→</span><span>SCADA Display</span><span class="ar">→</span><span>Alarm Handling</span></div>
+        <div class="ovl-txt">QMSM1 receives feedback from field panels and equipment, calculates cooling demand, commands compressors, pumps, valves and cooling equipment through the correct control panels, checks feedback, handles alarms and sends status to SCADA.</div>
+        <div class="seqcard"><b style="color:#9fe9c2">Example 1 — Production temperature rises</b><br>QCF sends temperature feedback to QMSM1 → QMSM1 calculates increased cooling demand → starts / loads compressor stages → commands pumps &amp; valve stations → feedback returns to QMSM1 → SCADA shows updated status &amp; trends.</div>
+        <div class="seqcard"><b style="color:#ff9a8f">Example 2 — Feedback missing</b><br>QMSM1 detects a command / feedback mismatch → alarm generated → SCADA displays alarm &amp; affected equipment → operator action required.</div>
+        <div class="ovl-note">Training &amp; visualization only — not an approved PLC logic document. Actual wiring, I/O addresses, cable routing, MCC details, PLC logic, protection devices, communication protocols and commissioning must be verified from approved site drawings.</div>
+      </div>
+      <div class="ovl" id="dataPanel">
+        <h4>Data Flow</h4>
+        <div class="dleg"><span style="color:#3b82f6">● Command</span><span style="color:#22d27e">● Feedback</span><span style="color:#ff4d4f">● Alarm</span><span style="color:#1ee0e0">● SCADA</span><span style="color:#ff6a3d">▬ R-22</span><span style="color:#1ee0e0">▬ Glycol</span></div>
+        <div class="ovl-txt">Field sensors send feedback to local panels. QCF panels and QMSM2 return feedback to QMSM1. QMSM1 sends commands to slave panels and controlled equipment. SCADA receives status, alarms, trends and operator-command confirmation through QMSM1 only.</div>
+        <div class="seqflow"><span>Sensors / Equipment</span><span class="ar">→</span><span>QCF / QMSM2</span><span class="ar">→</span><span>QMSM1 Master PLC</span><span class="ar">→</span><span>SCADA</span><span class="ar">→</span><span>Operator</span></div>
+        <div class="ovl-note">Training &amp; visualization only. Verify protocols, wiring and I/O from approved site drawings.</div>
+      </div>
+      <div class="ovl" id="faultPanel">
+        <h4>Fault Trace — signal path to SCADA</h4>
+        <div id="faultTraceBody"></div>
+      </div>
+      <div id="layerLegend"></div>
+      <div id="hint">Drag = rotate · Wheel = zoom · Right-drag = pan · Click any equipment for its data</div>
+      <div class="legend">
+        <div class="lr"><i style="background:var(--ref)"></i> R-22 refrigerant path</div>
+        <div class="lr"><i style="background:var(--gly)"></i> Water + glycol path</div>
+      </div>
+      <div id="training">
+        <div class="th"><div class="step">1</div><b id="trTitle"></b></div>
+        <div class="tb" id="trText"></div>
+        <div class="tf">
+          <button id="trPrev">Previous</button>
+          <button id="trNext" class="on">Next</button>
+          <span class="prog" id="trProg"></span>
+          <button id="trExit" style="margin-inline-start:auto">Exit</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEFT (dashboard) -->
+    <div id="left">
+      <div class="panel">
+        <h3><span class="dot"></span>Control Panel — SCADA</h3>
+        <div class="stats">
+          <div class="stat"><div class="l">COMPRESSORS RUNNING</div><div class="v"><span id="sCompRun">0</span><small>/15</small></div></div>
+          <div class="stat"><div class="l">CONDENSERS RUNNING</div><div class="v"><span id="sCondRun">0</span><small>/9</small></div></div>
+          <div class="stat wide"><div class="l">LIVE ENERGY CONSUMPTION</div>
+            <div class="v"><span id="sEnergy">0</span> <small>kW</small></div>
+            <div class="bar"><i id="energyBar" style="width:0%"></i></div></div>
+          <div class="stat"><div class="l">DISCHARGE PRESSURE (HP)</div><div class="v" id="sHP" style="color:var(--z8p)">0<small> bar</small></div></div>
+          <div class="stat"><div class="l">ALARMS</div><div class="v" id="sAlarm" style="color:var(--run)">0</div></div>
+        </div>
+        <div class="circuits" id="circuitRows"></div>
+        <div class="ctrlbadges" id="ctrlBadges">
+          <span class="cbadge"><i style="background:#ffb020"></i>QMSM1 Master · Active</span>
+          <span class="cbadge"><i style="background:#22d27e"></i>CPU-A Main / Run</span>
+          <span class="cbadge"><i style="background:#37b6ff"></i>CPU-B Standby</span>
+          <span class="cbadge"><i style="background:#1ee0e0"></i>SCADA Link</span>
+          <span class="cbadge"><i style="background:#22d27e"></i>QMSM2 Link</span>
+          <span class="cbadge"><i style="background:#22d27e"></i>QCF1–4 Links</span>
+          <span class="cbadge"><i style="background:#9ec6ff"></i>Mode: Auto</span>
+          <span class="cbadge"><i style="background:#f5a623"></i>Layer:&nbsp;<b id="sLayer">Process Flow</b></span>
+        </div>
+      </div>
+
+      <div class="panel" id="alarms">
+        <h3><span class="dot" style="background:var(--alarm);box-shadow:0 0 8px var(--alarm)"></span>Alarm Log</h3>
+        <div id="alarmlist"><div class="noal">✓ System operating within normal limits</div></div>
+      </div>
+    </div>
+
+    <!-- RIGHT (minimap + inspector) -->
+    <div id="right">
+      <div class="panel">
+        <h3><span class="dot"></span>Mini Map</h3>
+        <div id="minimap"><canvas id="mmcanvas" width="540" height="300"></canvas></div>
+      </div>
+      <div class="panel" id="inspector">
+        <h3><span class="dot"></span>Equipment Data</h3>
+        <div id="inspbody">
+          <div class="insp-empty"><span class="big">⟟</span>Click any element in the model<br>(electrical panel · compressor · condenser · receiver · vessel · exchanger)<br>to view its live technical data</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM dock charts -->
+    <div id="dock">
+      <div class="inner">
+        <div class="dock-head" id="dockHead">
+          <h3>TREND CHARTS</h3>
+          <span style="color:var(--muted);font-size:11px">temperature · pressure · energy</span>
+          <span class="chev">▾</span>
+        </div>
+        <div class="charts">
+          <div class="chartbox"><div class="ct"><span>Ambient / Circuits °C</span><b id="ctT"></b></div><div class="cwrap"><canvas id="chT"></canvas></div></div>
+          <div class="chartbox"><div class="ct"><span>Discharge / Suction bar</span><b id="ctP"></b></div><div class="cwrap"><canvas id="chP"></canvas></div></div>
+          <div class="chartbox"><div class="ct"><span>Energy consumption kW</span><b id="ctE"></b></div><div class="cwrap"><canvas id="chE"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-bg" id="mDiagram"><div class="modal">
+  <h2>🛢 Process Flow Diagram — MR4<button class="x" data-close>✕</button></h2>
+  <div class="body" id="diagramBody"></div>
+</div></div>
+<div class="modal-bg" id="mChem"><div class="modal">
+  <h2>🧪 Condenser Chemical Dosing System<button class="x" data-close>✕</button></h2>
+  <div class="body" id="chemBody"></div>
+</div></div>
+<div class="modal-bg" id="mTables"><div class="modal">
+  <h2>📋 Reference Distribution Tables<button class="x" data-close>✕</button></h2>
+  <div class="body" id="tablesBody"></div>
+</div></div>
+<div class="modal-bg" id="mPHE"><div class="modal">
+  <h2>🔥 Plate Heat Exchanger — P.H.E<button class="x" data-close>✕</button></h2>
+  <div class="body" id="pheBody"></div>
+</div></div>
+
+<div class="modal-bg" id="mElec"><div class="modal" style="max-width:860px">
+  <h2>⚡ Electrical Control Map — MR4<button class="x" data-close>\u2715</button></h2>
+  <div class="body" id="elecBody"></div>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+/* ============================================================
+   MR4 COOLING SYSTEM — 3D INTERACTIVE TRAINING PLATFORM (EN)
+   ============================================================ */
+"use strict";
+const TAU=Math.PI*2, clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+
+/* ---------- DOMAIN DATA ---------- */
+const CIR={
+  c4 :{key:'c4', id:'+4°C',  name:'+4°C Circuit', col:0x2ee06a, hex:'#2ee06a', sp:4,   lp:4.6, st:2,   n:3},
+  c41:{key:'c41',id:'-41°C', name:'-41°C Circuit',col:0x2f5cf0, hex:'#2f5cf0', sp:-41, lp:0.25,st:-43, n:5},
+  c12:{key:'c12',id:'-12°C', name:'-12°C Circuit',col:0x37b6ff, hex:'#37b6ff', sp:-12, lp:1.9, st:-14, n:7},
+};
+// 15 compressors: 3×+4, 5×-41, 7×-12
+const COMP=[];
+let ci=1;
+const buildComp=(cir,count)=>{for(let k=0;k<count;k++){const id=String(ci).padStart(2,'0');
+  COMP.push({id:'C'+id, n:ci, cir:cir, kW:rnd(68,82),
+    hours:Math.round(rnd(8000,42000)), run:false, load:0, hp:0, lp:0, st:0, dt:0, alarm:null});
+  ci++;}};
+buildComp('c4',3); buildComp('c41',5); buildComp('c12',7);
+const compById=id=>COMP.find(c=>c.id===id);
+
+// 9 condensers
+const COND=[]; for(let i=1;i<=9;i++)COND.push({id:'COND'+i,n:i,state:'run',fan:0,eff:rnd(92,99)});
+// liquid receiver
+const RCV={level:78,press:14.2,temp:38,valve:'open',alarm:null};
+// 4 vessels
+const VES=[
+  {id:'V-41',cir:'c41',name:'-41°C Vessel',level:62},
+  {id:'V+4', cir:'c4', name:'+4°C Vessel', level:70},
+  {id:'V-12A',cir:'c12',name:'-12°C Vessel (A)',level:66},
+  {id:'V-12B',cir:'c12',name:'-12°C Vessel (B)',level:64},
+];
+// PHE
+const PHE={glycol:35,water:65,freeze:-18,inT:-10,outT:-15,eff:96};
+// units 1-9 load zones
+const UNITS=[
+  {n:1,t:-8,col:0x5b8def},{n:2,t:-8,col:0x5b8def},{n:3,t:-8,col:0x5b8def},
+  {n:4,t:8,col:0xf5a623},{n:5,t:8,col:0xf5a623},
+  {n:6,t:2,col:0xb06bdc},{n:7,t:2,col:0xb06bdc},
+  {n:8,t:25,col:0xff5a4d},{n:9,t:25,col:0xff5a4d},
+];
+// electrical panels: 2 main + 15
+// ===== ELECTRICAL CONTROL HIERARCHY (Master / Slave PLC architecture) =====
+COMP.forEach(c=>{c.grp=(c.n<=8)?'A':'B';c.controlGroup='Group '+c.grp;c.master=c.grp==='A'?'QMSM1':'QMSM2';c.controlledBy=c.master;c.masterAuthority='QMSM1';});
+const CONTROL_PANELS=[
+  {id:'QMSM1',type:'Master PLC',cpu:'Redundant',cpuA:'Main CPU',cpuB:'Standby CPU',role:'Main control authority',controls:['Compressor Group A','Glycol Pump A','Water Pump A'],communicatesWith:['SCADA','QMSM2','QCF1','QCF2','QCF3','QCF4'],pos:[-45,-5]},
+  {id:'QMSM2',type:'Slave Panel',cpu:'No independent CPU',role:'Slave panel controlled by QMSM1',controls:['Compressor Group B','Glycol Pump B','Water Pump B'],communicatesWith:['QMSM1'],pos:[-45,4]},
+  {id:'SCADA',type:'Operator Interface',role:'Monitoring and control interface through QMSM1',controls:['Monitoring','Alarms','Trends','Operator Commands'],communicatesWith:['QMSM1'],pos:[-45,12]},
+  {id:'QCF1',type:'Slave Panel',area:'Production Area',controls:['Air coolers','Valve stations','Refrigeration machine','Local alarms'],communicatesWith:['QMSM1'],pos:[1,19]},
+  {id:'QCF2',type:'Slave Panel',area:'Production Area',controls:['Air coolers','Valve stations','Refrigeration machine','Local alarms'],communicatesWith:['QMSM1'],pos:[10,19]},
+  {id:'QCF3',type:'Slave Panel',area:'Production Area',controls:['Air coolers','Valve stations','Refrigeration machine','Local alarms'],communicatesWith:['QMSM1'],pos:[19,19]},
+  {id:'QCF4',type:'Slave Panel',area:'Production Area',controls:['Air coolers','Valve stations','Refrigeration machine','Local alarms'],communicatesWith:['QMSM1'],pos:[28,19]},
+];
+const ctrlById=id=>CONTROL_PANELS.find(p=>p.id===id);
+const NETLBL='Network';
+function commRow(id){const m={QMSM1:'PROFINET + fieldbus · OPC-UA to SCADA (redundant)',QMSM2:'PROFINET master link to QMSM1',QCF1:'PROFIBUS-DP fieldbus to QMSM1',QCF2:'PROFIBUS-DP fieldbus to QMSM1',QCF3:'PROFIBUS-DP fieldbus to QMSM1',QCF4:'PROFIBUS-DP fieldbus to QMSM1',SCADA:'Ethernet / OPC-UA via QMSM1'};return kv(NETLBL,m[id]||'—');}
+
+/* ---------- SIM STATE ---------- */
+const SIM={season:'summer',tod:'noon',mode:'normal',running:true,t:0,ambient:44,
+  energy:0,hpAvg:0,faults:new Set(),selected:null};
+const TOD={morning:{add:0,prod:.72,clock:'07:30'},noon:{add:6,prod:1.0,clock:'13:00'},night:{add:-4,prod:.55,clock:'23:00'}};
+const SEA={summer:{base:38},winter:{base:10}};
+
+function targetLoadPct(){
+  const a=SIM.ambient, base=clamp((a-2)/46,.18,1);
+  return clamp(base*lerp(.7,1.05,TOD[SIM.tod].prod),.2,1);
+}
+
+/* ============================================================
+   THREE.JS SCENE
+   ============================================================ */
+let scene,camera,renderer,raycaster,mouse,W,H;
+const selectable=[]; const labelSprites=[];
+const groups={};
+
+const cam={tgt:new THREE.Vector3(0,4,2), r:78, theta:-0.95, phi:0.92, minR:24,maxR:150};
+let dragging=false,panning=false,px=0,py=0;
+
+function initScene(){
+  const wrap=$('#scene'); W=wrap.clientWidth;H=wrap.clientHeight;
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x0a0f16);
+  scene.fog=new THREE.Fog(0x0a0f16,90,210);
+  camera=new THREE.PerspectiveCamera(46,W/H,0.5,500);
+  renderer=new THREE.WebGLRenderer({antialias:true,canvas:document.createElement('canvas')});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(W,H); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  wrap.appendChild(renderer.domElement);
+  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();},false);
+  raycaster=new THREE.Raycaster(); mouse=new THREE.Vector2();
+
+  scene.add(new THREE.HemisphereLight(0x9ec6ff,0x0a0f16,0.55));
+  const key=new THREE.DirectionalLight(0xffffff,0.95); key.position.set(40,70,30);
+  key.castShadow=true; key.shadow.mapSize.set(2048,2048);
+  const sc=key.shadow.camera; sc.left=-70;sc.right=70;sc.top=70;sc.bottom=-70;sc.near=1;sc.far=220;
+  scene.add(key);
+  const fill=new THREE.DirectionalLight(0x4aa6ff,0.4); fill.position.set(-40,30,-20); scene.add(fill);
+  SIM.keyLight=key;
+
+  buildGround();
+  buildAll();
+  buildFlow();
+  bindControls();
+  onResize();
+  animate();
+}
+
+function buildGround(){
+  const g=new THREE.Group();
+  const mat=new THREE.MeshStandardMaterial({color:0x0e1822,roughness:.95,metalness:.1});
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(98,1,66),mat);
+  floor.position.y=-0.5; floor.receiveShadow=true; g.add(floor);
+  const grid=new THREE.GridHelper(96,48,0x1c3346,0x142532);
+  grid.position.y=0.02; g.add(grid);
+  const pad=(x,z,w,d,col)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),
+    new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.06}));
+    m.rotation.x=-Math.PI/2;m.position.set(x,0.04,z);g.add(m);};
+  pad(-31,0,26,52,0x1d5fb0);
+  pad(-7,0,16,48,0xff6a3d);
+  pad(8,0,12,28,0x27c6ff);
+  scene.add(g);
+}
+
+/* ---- label sprite ---- */
+function makeLabel(text,opt={}){
+  const c=document.createElement('canvas'); const ctx=c.getContext('2d');
+  const fs=opt.fs||44, pad=opt.pad||14, font=`700 ${fs}px Rajdhani, sans-serif`;
+  ctx.font=font; const tw=ctx.measureText(text).width;
+  c.width=tw+pad*2; c.height=fs+pad*1.4;
+  ctx.font=font;
+  if(opt.bg!==false){ctx.fillStyle=opt.bg||'rgba(10,16,22,.82)';
+    roundRect(ctx,0,0,c.width,c.height,12);ctx.fill();
+    ctx.lineWidth=2.5;ctx.strokeStyle=opt.border||'#27c6ff';roundRect(ctx,1.4,1.4,c.width-2.8,c.height-2.8,11);ctx.stroke();}
+  ctx.fillStyle=opt.color||'#d7e3ee'; ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(text,c.width/2,c.height/2+1);
+  const tex=new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:opt.depthTest!==false}));
+  const sc=(opt.scale||1)*0.018; sp.scale.set(c.width*sc,c.height*sc,1);
+  sp.userData.isLabel=true; labelSprites.push(sp); return sp;
+}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+const metal=(c,rough=.55)=>new THREE.MeshStandardMaterial({color:c,roughness:rough,metalness:.6});
+const matte=(c,rough=.85)=>new THREE.MeshStandardMaterial({color:c,roughness:rough,metalness:.15});
+function statusLight(){const m=new THREE.Mesh(new THREE.SphereGeometry(0.32,16,16),
+  new THREE.MeshStandardMaterial({color:0x5c7081,emissive:0x5c7081,emissiveIntensity:.6}));return m;}
+function regSelect(mesh,kind,id){mesh.userData.sel={kind,id};selectable.push(mesh);}
+
+/* ---- BUILD EQUIPMENT ---- */
+function buildAll(){
+  groups.comp=[];groups.cond=[];groups.rcv=[];groups.ves=[];groups.phe=[];groups.unit=[];groups.ctrl=[];
+  buildCompressors(); buildControlRoom();
+  buildCondensers();
+  buildReceiver();
+  buildVessels();
+  buildPHE();
+  buildUnits();
+  addSection('Compressor & Electrical Hall',-31,16,-22);
+  addSection('Condensers + Chemical Dosing',-7,15,-22);
+  addSection('Liquid Receiver',8,12,-14);
+  addSection('Vessels',20,13,-13);
+  addSection('P.H.E',30,12,-9);
+  addSection('Load Units 1-9',8,11,24);
+}
+function addSection(t,x,y,z){const sp=makeLabel(t,{fs:36,scale:1.15,color:'#9ec6ff',
+  bg:'rgba(15,25,35,.7)',border:'#2c4659'});sp.position.set(x,y,z);scene.add(sp);}
+
+const COMP_ROWS={c4:{z:-14},c41:{z:-1},c12:{z:13}};
+function buildCompressors(){
+  const byCir={c4:[],c41:[],c12:[]}; COMP.forEach(c=>byCir[c.cir].push(c));
+  Object.keys(byCir).forEach(ck=>{
+    const arr=byCir[ck], z=COMP_ROWS[ck].z, cir=CIR[ck];
+    const startX=-37, dx=3.3;
+    arr.forEach((c,i)=>{
+      const x=startX+i*dx;
+      const g=new THREE.Group(); g.position.set(x,0,z);
+      const base=new THREE.Mesh(new THREE.BoxGeometry(2.4,0.5,2),matte(0x223040)); base.position.y=0.25; base.castShadow=true; g.add(base);
+      const body=new THREE.Mesh(new THREE.CylinderGeometry(0.85,0.85,2.4,24),metal(0x39505f));
+      body.rotation.z=Math.PI/2; body.position.set(0,1.05,0); body.castShadow=true; g.add(body);
+      const motor=new THREE.Mesh(new THREE.CylinderGeometry(1,1,1.5,24),metal(cir.col,.45));
+      motor.rotation.z=Math.PI/2; motor.position.set(1.2,1.05,0); motor.castShadow=true; g.add(motor);
+      const head=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,1.4,16),metal(0x5a7080));
+      head.position.set(-0.9,1.9,0); g.add(head);
+      const li=statusLight(); li.position.set(0,2.3,0); g.add(li);
+      const tag=makeLabel(c.id,{fs:38,scale:1,border:cir.hex}); tag.position.set(0,3.2,0); g.add(tag);
+      regSelect(body,'comp',c.id); regSelect(motor,'comp',c.id); regSelect(base,'comp',c.id);
+      scene.add(g);
+      groups.comp.push({rec:c,group:g,light:li,body:[body,motor],tag});
+    });
+  });
+}
+/* ===== Electrical control room: Master PLC (QMSM1), slave QMSM2, SCADA HMI, QCF1-4 + comm lines ===== */
+function ctrlMini(t,x,y,z,parent,col){const s=makeLabel(t,{fs:24,scale:.6,color:col,bg:'rgba(8,14,20,.85)',border:col});s.position.set(x,y,z);parent.add(s);}
+function buildControlRoom(){
+  const POS={};
+  CONTROL_PANELS.forEach(p=>{
+    const x=p.pos[0],z=p.pos[1];const g=new THREE.Group();g.position.set(x,0,z);let li,topY;
+    if(p.id==='QMSM1'){
+      // distinct GOLD master cabinet, larger than the slaves
+      const cab=new THREE.Mesh(new THREE.BoxGeometry(4.2,5.8,2.3),metal(0x5a4d2c,.45));cab.position.y=2.9;cab.castShadow=true;g.add(cab);
+      const face=new THREE.Mesh(new THREE.BoxGeometry(3.7,5.0,0.12),matte(0x171310));face.position.set(0,3.0,1.17);g.add(face);
+      const banner=new THREE.Mesh(new THREE.BoxGeometry(3.7,0.7,0.08),new THREE.MeshStandardMaterial({color:0xffb020,emissive:0xffb020,emissiveIntensity:.65}));banner.position.set(0,5.0,1.2);g.add(banner);
+      ctrlMini('MASTER PLC',0,5.0,1.33,g,'#1a1206');
+      // --- CPU-A : main / running (green) ---
+      const cA=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.6,0.16),new THREE.MeshStandardMaterial({color:0x0c1a16,emissive:0x22d27e,emissiveIntensity:.7}));cA.position.set(-0.95,3.4,1.2);g.add(cA);
+      const cAled=new THREE.Mesh(new THREE.SphereGeometry(0.15,12,12),new THREE.MeshStandardMaterial({color:0x22d27e,emissive:0x22d27e,emissiveIntensity:1}));cAled.position.set(-0.95,4.0,1.34);g.add(cAled);
+      ctrlMini('CPU-A',-0.95,3.55,1.36,g,'#22d27e');ctrlMini('MAIN · RUN',-0.95,2.85,1.36,g,'#9fe9c2');
+      // --- CPU-B : standby / healthy (blue) ---
+      const cB=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.6,0.16),new THREE.MeshStandardMaterial({color:0x0c1622,emissive:0x37b6ff,emissiveIntensity:.55}));cB.position.set(0.95,3.4,1.2);g.add(cB);
+      const cBled=new THREE.Mesh(new THREE.SphereGeometry(0.15,12,12),new THREE.MeshStandardMaterial({color:0x37b6ff,emissive:0x37b6ff,emissiveIntensity:.8}));cBled.position.set(0.95,4.0,1.34);g.add(cBled);
+      ctrlMini('CPU-B',0.95,3.55,1.36,g,'#37b6ff');ctrlMini('STANDBY',0.95,2.85,1.36,g,'#a9d6f5');
+      // comms port strip
+      for(let r=0;r<4;r++){const m=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.3,0.06),new THREE.MeshStandardMaterial({color:0x1ee0e0,emissive:0x1ee0e0,emissiveIntensity:.55}));m.position.set(-1.0+r*0.66,1.45,1.22);g.add(m);}
+      const tag=makeLabel('QMSM1 · MASTER PLC',{fs:40,scale:1.4,border:'#ffb020',color:'#ffe2a6'});tag.position.set(0,7.1,0);g.add(tag);
+      const tag2=makeLabel('Redundant CPU — A main / B standby',{fs:22,scale:.64,color:'#ffd58a'});tag2.position.set(0,6.25,0);g.add(tag2);
+      li=statusLight();li.position.set(2.0,6.1,1.1);g.add(li);topY=3.0;
+      regSelect(cab,'ctrl',p.id);regSelect(face,'ctrl',p.id);regSelect(cA,'ctrl',p.id);regSelect(cB,'ctrl',p.id);
+      groups.ctrl.push({rec:p,group:g,light:li,cpuA:cA,cpuB:cB});
+    } else if(p.id==='SCADA'){
+      const desk=new THREE.Mesh(new THREE.BoxGeometry(2.6,1.1,1.3),matte(0x223040));desk.position.y=0.55;desk.castShadow=true;g.add(desk);
+      const stand=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,0.7,10),metal(0x556677));stand.position.set(0,1.4,0);g.add(stand);
+      const screen=new THREE.Mesh(new THREE.BoxGeometry(2.4,1.5,0.1),new THREE.MeshStandardMaterial({color:0x07242c,emissive:0x1ee0e0,emissiveIntensity:.55}));screen.position.set(0,2.2,0.1);screen.rotation.x=-0.32;g.add(screen);
+      const tag=makeLabel('SCADA · HMI',{fs:32,scale:1.05,border:'#1ee0e0'});tag.position.set(0,3.4,0);g.add(tag);
+      li=statusLight();li.position.set(1.1,2.9,0.4);g.add(li);topY=2.2;
+      regSelect(screen,'ctrl',p.id);regSelect(desk,'ctrl',p.id);
+      groups.ctrl.push({rec:p,group:g,light:li});
+    } else {
+      const isQCF=p.id.indexOf('QCF')===0;
+      const col=isQCF?0x2d4a3a:0x33414e,bcol=isQCF?'#2ee06a':'#37b6ff';
+      const cab=new THREE.Mesh(new THREE.BoxGeometry(2.2,3.7,1.2),metal(col,.5));cab.position.y=1.95;cab.castShadow=true;g.add(cab);
+      const face=new THREE.Mesh(new THREE.BoxGeometry(1.9,3.1,0.1),matte(0x10202b));face.position.set(0,2.05,0.62);g.add(face);
+      const strip=new THREE.Mesh(new THREE.BoxGeometry(1.9,0.2,0.1),new THREE.MeshStandardMaterial({color:isQCF?0x2ee06a:0x37b6ff,emissive:isQCF?0x2ee06a:0x37b6ff,emissiveIntensity:.5}));strip.position.set(0,3.35,0.64);g.add(strip);
+      const tag=makeLabel(p.id+' · SLAVE',{fs:30,scale:.95,border:bcol});tag.position.set(0,4.4,0);g.add(tag);
+      li=statusLight();li.position.set(0.8,3.5,0.6);g.add(li);topY=2.05;
+      regSelect(cab,'ctrl',p.id);regSelect(face,'ctrl',p.id);
+      groups.ctrl.push({rec:p,group:g,light:li});
+    }
+    POS[p.id]=new THREE.Vector3(x,topY,z);
+  });
+  const q1=POS['QMSM1'];
+  commPair(q1,POS['QMSM2'],{proto:'PROFINET'});
+  ['QCF1','QCF2','QCF3','QCF4'].forEach(id=>commPair(q1,POS[id],{proto:'PROFIBUS-DP'}));
+  commLink(q1,POS['SCADA'],0x1ee0e0,{proto:'Ethernet / OPC-UA'});
+  buildAuxPumps();
+  addSection('Control Room · PLC',-45,8,-13);
+  addSection('Production QCF Panels',14.5,7.5,15);
+}
+const comms=[];
+const elecObjs=[];
+function lineSeg(a,b,col,yoff,op){const A=a.clone(),B=b.clone();A.y+=yoff;B.y+=yoff;
+  const geo=new THREE.BufferGeometry().setFromPoints([A,B]);
+  const ln=new THREE.Line(geo,new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op}));scene.add(ln);elecObjs.push(ln);return ln;}
+function arrowAt(p,dir,col){const c=new THREE.Mesh(new THREE.ConeGeometry(0.28,0.8,8),new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.85}));c.position.copy(p);c.lookAt(p.clone().add(dir));c.rotateX(Math.PI/2);scene.add(c);elecObjs.push(c);}
+function commLabel(a,b,meta){if(!meta||!meta.proto)return;const mid=a.clone().lerp(b,0.5);mid.y+=0.95;
+  const s=makeLabel(meta.proto,{fs:22,scale:.6,color:'#bcd6e6',bg:'rgba(8,14,20,.86)',border:'#2c4659'});s.position.copy(mid);scene.add(s);elecObjs.push(s);}
+function addPulses(a,b,col,n,yoff,phase){const A=a.clone(),B=b.clone();A.y+=yoff;B.y+=yoff;const nodes=[];
+  for(let i=0;i<n;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(0.17,8,8),new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:1}));scene.add(m);nodes.push(m);}
+  comms.push({A,B,n,t:phase||0,nodes});}
+function updateComms(dt){const sp=SIM.running?0.45:0.12;
+  comms.forEach(c=>{c.t=(c.t+dt*sp)%1;c.nodes.forEach((m,i)=>{const t=(c.t+i/c.n)%1;m.position.lerpVectors(c.A,c.B,t);m.material.emissiveIntensity=SIM.running?1:0.4;});});}
+function commPair(a,b,meta){const dir=new THREE.Vector3().subVectors(b,a).normalize();
+  lineSeg(a,b,0x3b82f6,0.28,.85);lineSeg(a,b,0x22d27e,-0.28,.7);lineSeg(a,b,0xff4d4f,0,.3);
+  arrowAt(b.clone().addScaledVector(dir,-1.2).setY(b.y+0.28),dir,0x3b82f6);
+  arrowAt(a.clone().addScaledVector(dir,1.2).setY(a.y-0.28),dir.clone().negate(),0x22d27e);
+  addPulses(a,b,0x3b82f6,2,0.28,0);addPulses(b,a,0x22d27e,2,-0.28,0.5);
+  commLabel(a,b,meta);}
+function commLink(a,b,col,meta){const dir=new THREE.Vector3().subVectors(b,a).normalize();
+  lineSeg(a,b,col,0.12,.9);
+  arrowAt(b.clone().addScaledVector(dir,-1.0).setY(b.y+0.12),dir,col);
+  arrowAt(a.clone().addScaledVector(dir,1.0).setY(a.y+0.12),dir.clone().negate(),col);
+  addPulses(a,b,col,2,0.2,0);addPulses(b,a,col,2,0.04,0.5);
+  commLabel(a,b,meta);}
+function pumpNode(x,z,label,colNum,fromX,fromZ){const g=new THREE.Group();g.position.set(x,0,z);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.4,1.1),matte(0x223040));base.position.y=0.2;g.add(base);
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,1,18),metal(colNum,.45));body.rotation.z=Math.PI/2;body.position.y=0.9;g.add(body);
+  const li=statusLight();li.scale.set(.7,.7,.7);li.position.set(0,1.6,0);g.add(li);
+  const tag=makeLabel(label,{fs:24,scale:.66,border:'#9fb8c8'});tag.position.set(0,2.3,0);g.add(tag);
+  scene.add(g);elecObjs.push(g);
+  lineSeg(new THREE.Vector3(fromX,1.6,fromZ),new THREE.Vector3(x,1.4,z),0xf5c542,0,.85);}
+function buildAuxPumps(){
+  pumpNode(-50,-7.5,'Glycol Pump A',0x1ee0e0,-45,-5);
+  pumpNode(-50,-3.5,'Water Pump A',0x37b6ff,-45,-5);
+  pumpNode(-50,2.5,'Glycol Pump B',0x1ee0e0,-45,4);
+  pumpNode(-50,6.5,'Water Pump B',0x37b6ff,-45,4);
+  const ll=makeLabel('Hardwired I/O',{fs:20,scale:.55,color:'#f5c542',bg:'rgba(8,14,20,.85)',border:'#7a6a2a'});ll.position.set(-50,3.8,-0.5);scene.add(ll);elecObjs.push(ll);}
+
+function buildCondensers(){
+  const x=-7, z0=-16, dz=4;
+  COND.forEach((c,i)=>{
+    const z=z0+i*dz;
+    const g=new THREE.Group(); g.position.set(x,0,z);
+    const plat=new THREE.Mesh(new THREE.BoxGeometry(5,0.4,3.4),matte(0x223040)); plat.position.y=4; g.add(plat);
+    [[-2.2,-1.4],[2.2,-1.4],[-2.2,1.4],[2.2,1.4]].forEach(([lx,lz])=>{
+      const leg=new THREE.Mesh(new THREE.BoxGeometry(0.25,4,0.25),matte(0x2c3a47));
+      leg.position.set(lx,2,lz);leg.castShadow=true;g.add(leg);});
+    const block=new THREE.Mesh(new THREE.BoxGeometry(4.4,2,3),metal(0x445868,.5));
+    block.position.y=5.2; block.castShadow=true; g.add(block);
+    const fans=[];
+    [-1.05,1.05].forEach(fx=>{
+      const ring=new THREE.Mesh(new THREE.CylinderGeometry(0.95,0.95,0.3,20),metal(0x2c3a47));
+      ring.position.set(fx,6.3,0); g.add(ring);
+      const blades=new THREE.Group(); blades.position.set(fx,6.5,0);
+      for(let b=0;b<4;b++){const bl=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.05,0.32),matte(0x6a8294));
+        bl.rotation.y=b*Math.PI/2; bl.rotation.x=0.3; blades.add(bl);}
+      g.add(blades); fans.push(blades);
+    });
+    const li=statusLight(); li.position.set(2,6,1.4); g.add(li);
+    const tag=makeLabel('COND '+c.n,{fs:34,scale:.95,border:'#ff6a3d'}); tag.position.set(0,7.4,0); g.add(tag);
+    regSelect(block,'cond',c.id); regSelect(plat,'cond',c.id);
+    scene.add(g);
+    groups.cond.push({rec:c,group:g,light:li,fans,body:[block]});
+  });
+  const sk=new THREE.Group(); sk.position.set(-7,0,20);
+  const tank=(dx,col,t)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.7,2.4,18),metal(col,.4));
+    m.position.set(dx,1.2,0);m.castShadow=true;sk.add(m);
+    const lb=makeLabel(t,{fs:26,scale:.7});lb.position.set(dx,2.9,0);sk.add(lb);
+    regSelect(m,'chem',t);};
+  tank(-2.2,0x2e86de,'7321'); tank(0,0x16a085,'7410'); tank(2.2,0xc0392b,'2867');
+  const pad=new THREE.Mesh(new THREE.BoxGeometry(7,0.3,2.4),matte(0x223040)); pad.position.y=0.15; sk.add(pad);
+  const lb=makeLabel('🧪 HYDREX DOSING',{fs:30,scale:.9,border:'#2ee06a'});lb.position.set(0,4,0);sk.add(lb);
+  scene.add(sk);
+}
+
+function buildReceiver(){
+  const g=new THREE.Group(); g.position.set(8,0,0);
+  [[-3,0],[3,0]].forEach(([lx])=>{const s=new THREE.Mesh(new THREE.BoxGeometry(0.5,2.4,2.4),matte(0x2c3a47));
+    s.position.set(lx,1.2,0);g.add(s);});
+  const tank=new THREE.Mesh(new THREE.CylinderGeometry(2,2,8,28),metal(0x6a7f8e,.4));
+  tank.rotation.x=Math.PI/2; tank.position.y=3.2; tank.castShadow=true; g.add(tank);
+  [-4,4].forEach(zc=>{const cap=new THREE.Mesh(new THREE.SphereGeometry(2,24,16,0,TAU,0,Math.PI/2),metal(0x6a7f8e,.4));
+    cap.rotation.x=zc>0?-Math.PI/2:Math.PI/2;cap.position.set(0,3.2,zc);g.add(cap);});
+  const lvl=new THREE.Mesh(new THREE.BoxGeometry(0.3,2.4,0.3),
+    new THREE.MeshStandardMaterial({color:0x27c6ff,emissive:0x27c6ff,emissiveIntensity:.5}));
+  lvl.position.set(2.1,3.2,0); g.add(lvl);
+  const li=statusLight(); li.position.set(0,5.6,0); g.add(li);
+  const tag=makeLabel('LIQUID RECEIVER',{fs:34,scale:1.05,border:'#27c6ff'}); tag.position.set(0,6.6,0); g.add(tag);
+  regSelect(tank,'rcv','RCV');
+  scene.add(g);
+  groups.rcv.push({rec:RCV,group:g,light:li,lvlMesh:lvl,body:[tank]});
+}
+
+function buildVessels(){
+  const x=20, z0=-9, dz=6;
+  VES.forEach((v,i)=>{
+    const cir=CIR[v.cir]; const z=z0+i*dz;
+    const g=new THREE.Group(); g.position.set(x,0,z);
+    const tank=new THREE.Mesh(new THREE.CylinderGeometry(1.3,1.3,5,24),metal(cir.col,.4));
+    tank.position.y=3; tank.castShadow=true; g.add(tank);
+    const top=new THREE.Mesh(new THREE.SphereGeometry(1.3,20,12,0,TAU,0,Math.PI/2),metal(cir.col,.4));
+    top.position.y=5.5; g.add(top);
+    const skirt=new THREE.Mesh(new THREE.CylinderGeometry(1.3,1.45,0.6,24),matte(0x223040)); skirt.position.y=0.3; g.add(skirt);
+    const li=statusLight(); li.position.set(0,6.6,0); g.add(li);
+    const tag=makeLabel(v.id,{fs:32,scale:.95,border:cir.hex}); tag.position.set(0,7.3,0); g.add(tag);
+    regSelect(tank,'ves',v.id);
+    scene.add(g);
+    groups.ves.push({rec:v,group:g,light:li,body:[tank,top]});
+  });
+}
+
+function buildPHE(){
+  const g=new THREE.Group(); g.position.set(30,0,0);
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(2.2,4,5),metal(0x55707f,.45)); frame.position.y=2.4; frame.castShadow=true; g.add(frame);
+  for(let i=0;i<14;i++){const pl=new THREE.Mesh(new THREE.BoxGeometry(0.06,3.4,4.4),
+    metal(i%2?0x37b6ff:0xc8d6e0,.3)); pl.position.set(-1+i*0.15,2.4,0); g.add(pl);}
+  const li=statusLight(); li.position.set(0,4.8,0); g.add(li);
+  const tag=makeLabel('P.H.E',{fs:36,scale:1.1,border:'#1ee0e0'}); tag.position.set(0,5.6,0); g.add(tag);
+  const tag2=makeLabel('35% glycol / 65% water',{fs:24,scale:.7,color:'#1ee0e0'}); tag2.position.set(0,4.3,0); g.add(tag2);
+  regSelect(frame,'phe','PHE');
+  scene.add(g);
+  groups.phe.push({rec:PHE,group:g,light:li,body:[frame]});
+}
+
+function buildUnits(){
+  const z=24, x0=-22, dx=5.6;
+  UNITS.forEach((u,i)=>{
+    const x=x0+i*dx;
+    const g=new THREE.Group(); g.position.set(x,0,z);
+    const box=new THREE.Mesh(new THREE.BoxGeometry(3.4,2.4,3),matte(u.col,.7));
+    box.position.y=1.2; box.castShadow=true; g.add(box);
+    const top=new THREE.Mesh(new THREE.BoxGeometry(3.6,0.3,3.2),matte(0x223040)); top.position.y=2.5; g.add(top);
+    const ts=(u.t>0?'+':'')+u.t+'°C';
+    const tag=makeLabel('U'+u.n+'  '+ts,{fs:30,scale:.92,
+      border:'#'+u.col.toString(16).padStart(6,'0'),color:'#fff'}); tag.position.set(0,3.4,0); g.add(tag);
+    regSelect(box,'unit',u.n);
+    scene.add(g);
+    groups.unit.push({rec:u,group:g,body:[box]});
+  });
+}
+
+/* ---------- FLOW PATHS ---------- */
+const flows=[];
+const pipeLabels=[];
+function pathPoints(arr){return arr.map(p=>new THREE.Vector3(p[0],p[1],p[2]));}
+function pipeLabel(t,x,y,z,col){const s=makeLabel(t,{fs:22,scale:.72,color:col,bg:'rgba(8,14,20,.82)',border:col});s.position.set(x,y,z);scene.add(s);pipeLabels.push(s);}
+function buildFlow(){
+  const refSegs=[
+    [[-30,3,-1],[-18,8,-1],[-7,8,-16]],
+    [[-7,7,16],[2,6,8],[8,5.4,0]],
+    [[8,3.2,3],[14,3,5],[20,3,-9]],
+    [[20,5,9],[26,4,4],[30,3,0]],
+  ];
+  refSegs.forEach(s=>addFlow(s,0xff6a3d,'ref'));
+  addFlow([[30,2,2],[28,1.5,14],[8,1.5,24]],0x1ee0e0,'gly');
+  addFlow([[8,1.2,24],[-10,1.5,22],[-20,1.5,24]],0x1ee0e0,'gly');
+  addFlow([[-20,2,24],[2,3,10],[30,2.4,-1]],0x1ee0e0,'gly');
+  pipeLabel('Hot Gas',-18,9,-1,'#ff6a3d');
+  pipeLabel('Condensed Liquid',1,7.4,9,'#ff6a3d');
+  pipeLabel('Liquid Supply',14,4,5,'#ff6a3d');
+  pipeLabel('Cooling Transfer',26,5,4,'#ff6a3d');
+  pipeLabel('Chilled Glycol Supply',28,3,14,'#1ee0e0');
+  pipeLabel('Glycol Return',-10,3,22,'#1ee0e0');
+  pipeLabel('Glycol Return',3,4,10,'#1ee0e0');
+}
+function addFlow(pts,col,type){
+  const curve=new THREE.CatmullRomCurve3(pathPoints(pts));
+  const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,40,0.18,8,false),
+    new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.25,roughness:.5,transparent:true,opacity:.55}));
+  scene.add(tube);
+  const cones=[];
+  const N=5;
+  for(let i=0;i<N;i++){
+    const cone=new THREE.Mesh(new THREE.ConeGeometry(0.32,0.9,10),
+      new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.9}));
+    scene.add(cone); cones.push(cone);
+  }
+  flows.push({curve,cones,type,N,col,tube,offset:Math.random()});
+}
+
+/* ---------- CONTROLS ---------- */
+function bindControls(){
+  const el=renderer.domElement;
+  el.addEventListener('mousedown',e=>{if(e.button===2){panning=true;}else dragging=true;px=e.clientX;py=e.clientY;});
+  window.addEventListener('mouseup',()=>{dragging=panning=false;});
+  window.addEventListener('mousemove',e=>{
+    if(!dragging&&!panning)return; const dx=e.clientX-px,dy=e.clientY-py;px=e.clientX;py=e.clientY;
+    if(dragging){cam.theta-=dx*0.005;cam.phi=clamp(cam.phi-dy*0.005,0.12,1.5);}
+    else{const sp=cam.r*0.0016;const right=new THREE.Vector3().crossVectors(camera.up,new THREE.Vector3().subVectors(camera.position,cam.tgt)).normalize();
+      cam.tgt.addScaledVector(right,dx*sp); cam.tgt.y=clamp(cam.tgt.y+dy*sp,0,30);}
+  });
+  el.addEventListener('wheel',e=>{e.preventDefault();cam.r=clamp(cam.r*(1+Math.sign(e.deltaY)*0.08),cam.minR,cam.maxR);},{passive:false});
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+  el.addEventListener('click',onClick);
+  let lastTouch=null,pinchD=0;
+  el.addEventListener('touchstart',e=>{if(e.touches.length===1){lastTouch={x:e.touches[0].clientX,y:e.touches[0].clientY};}
+    else if(e.touches.length===2){pinchD=touchDist(e);}},{passive:true});
+  el.addEventListener('touchmove',e=>{
+    if(e.touches.length===1&&lastTouch){const dx=e.touches[0].clientX-lastTouch.x,dy=e.touches[0].clientY-lastTouch.y;
+      cam.theta-=dx*0.005;cam.phi=clamp(cam.phi-dy*0.005,0.12,1.5);lastTouch={x:e.touches[0].clientX,y:e.touches[0].clientY};}
+    else if(e.touches.length===2){const d=touchDist(e);if(pinchD)cam.r=clamp(cam.r*(pinchD/d),cam.minR,cam.maxR);pinchD=d;}
+  },{passive:true});
+  window.addEventListener('resize',onResize);
+}
+function touchDist(e){const a=e.touches[0],b=e.touches[1];return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);}
+
+function onResize(){const wrap=$('#scene');if(!wrap)return;
+  const w=wrap.clientWidth,h=wrap.clientHeight; if(w<2||h<2)return;
+  W=w;H=h;camera.aspect=W/H;camera.updateProjectionMatrix();renderer.setSize(W,H);}
+
+function onClick(e){
+  const r=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-r.left)/r.width)*2-1; mouse.y=-((e.clientY-r.top)/r.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObjects(selectable,false);
+  if(hits.length){const sel=hits[0].object.userData.sel; selectComponent(sel.kind,sel.id);}
+}
+
+/* ---------- ANIMATE ---------- */
+let lastT=performance.now(), simAccum=0;
+function animate(){
+  requestAnimationFrame(animate);
+  const now=performance.now(); let dt=(now-lastT)/1000; lastT=now;
+  if(document.hidden)return;                 // pause work while tab is not visible
+  if(!(dt>0)||dt>0.1)dt=0.05;                // guard against NaN / large gaps
+  try{
+    const cp=camera.position;
+    cp.x=cam.tgt.x+cam.r*Math.sin(cam.phi)*Math.cos(cam.theta);
+    cp.z=cam.tgt.z+cam.r*Math.sin(cam.phi)*Math.sin(cam.theta);
+    cp.y=cam.tgt.y+cam.r*Math.cos(cam.phi);
+    camera.lookAt(cam.tgt);
+    const flowSpeed=SIM.running?(SIM.season==='summer'?0.09:0.05):0;
+    flows.forEach(f=>{f.offset=(f.offset+dt*flowSpeed)%1;
+      f.cones.forEach((c,i)=>{let t=(f.offset+i/f.N)%1;const p=f.curve.getPoint(t);
+        const tan=f.curve.getTangent(t);c.position.copy(p);c.lookAt(p.clone().add(tan));
+        c.rotateX(Math.PI/2);c.visible=SIM.running&&(currentLayer==='process'||currentLayer==='all');});});
+    groups.cond.forEach(o=>{if(o.rec.state==='run'){const sp=o.rec.fan/100*0.5;o.fans.forEach(fa=>fa.rotation.y+=sp);}});
+    simAccum+=dt; if(simAccum>=0.5){simAccum=0;simTick();if(typeof currentLayer!=='undefined'&&currentLayer==='fault')renderFaultTrace();}
+    updateComms(dt);
+    renderer.render(scene,camera);
+  }catch(err){ if(!animate._warned){console.error('frame error (recovered):',err);animate._warned=true;} }
+}
+
+/* ============================================================
+   SIMULATION ENGINE
+   ============================================================ */
+function computeAmbient(){
+  const a=SEA[SIM.season].base+TOD[SIM.tod].add+rnd(-0.6,0.6);
+  return Math.round(a*10)/10;
+}
+function simTick(){
+  SIM.t++;
+  SIM.ambient=computeAmbient();
+  const loadPct=targetLoadPct();
+  const hasFault=f=>SIM.faults.has(f);
+
+  let running=0, energy=0;
+  Object.keys(CIR).forEach(ck=>{
+    const cir=CIR[ck], arr=COMP.filter(c=>c.cir===ck);
+    let needRun = SIM.running ? Math.max(1,Math.round(arr.length*loadPct)) : 0;
+    arr.forEach((c,i)=>{
+      let shouldRun = i<needRun;
+      if(c.failed){shouldRun=false;}
+      c.run=shouldRun&&SIM.running;
+      if(c.run){
+        running++;
+        const tl=clamp(loadPct*100+rnd(-6,6),30,100);
+        c.load=Math.round(lerp(c.load||tl,tl,0.4));
+        c.lp=Math.round((cir.lp+rnd(-0.1,0.1))*100)/100;
+        c.st=Math.round((cir.st+rnd(-1,1))*10)/10;
+        let hp=11.5+(SIM.ambient-10)*0.17;
+        if(hasFault('hp'))hp+=4.2;
+        if(hasFault('cond'))hp+=2.6;
+        c.hp=Math.round((hp+rnd(-0.2,0.2))*10)/10;
+        c.dt=Math.round(58+(c.hp-12)*3.4+rnd(-2,2));
+        energy+=c.kW*c.load/100;
+        c.alarm=null;
+        if(c.dt>92)c.alarm='Discharge temperature high';
+        if(hasFault('hp')&&ck==='c41')c.alarm='High discharge pressure';
+      }else{
+        c.load=0;c.hp=0;c.lp=0;c.dt=0;c.st=cir.st;
+        c.alarm=c.failed?'Compressor fault — stopped':null;
+      }
+    });
+  });
+
+  let condRun=0;
+  const condNeed = SIM.running?Math.max(2,Math.round(9*loadPct)):0;
+  const fanSpeed = SIM.running?clamp(35+(SIM.ambient-10)*1.9,30,100):0;
+  COND.forEach((c,i)=>{
+    if(c.forceMaint){c.state='maint';c.fan=0;return;}
+    if(c.forceAlarm){c.state='alarm';c.fan=fanSpeed*0.4;condRun++;return;}
+    if(i<condNeed&&SIM.running){c.state='run';c.fan=Math.round(fanSpeed+rnd(-4,4));condRun++;
+      c.eff=clamp(c.eff+(hasFault('cond')?-0.4:0.1)+rnd(-.3,.3), hasFault('cond')?70:88,99);
+      energy+=c.fan/100*7.5;}
+    else{c.state='stop';c.fan=0;}
+  });
+
+  RCV.temp=Math.round((SIM.ambient-4+rnd(-0.5,.5))*10)/10;
+  RCV.press=Math.round((11+(SIM.ambient-10)*0.12+rnd(-.1,.1))*10)/10;
+  RCV.level=hasFault('rcv')?Math.round(clamp(RCV.level-2,10,12)):Math.round(clamp(lerp(RCV.level,76,0.3)+rnd(-1,1),60,90));
+  RCV.alarm=hasFault('rcv')?'Critical liquid level drop':(RCV.level<35?'Low level':null);
+  RCV.valve='open';
+
+  VES.forEach(v=>{const base=v.cir==='c41'?60:v.cir==='c4'?70:65;
+    v.level=Math.round(clamp(lerp(v.level,base,0.3)+rnd(-1.5,1.5),45,85));});
+
+  PHE.glycol=hasFault('glycol')?22:35;
+  PHE.freeze=hasFault('glycol')?-9:-18;
+  PHE.inT=Math.round((-10+rnd(-.5,.5))*10)/10;
+  PHE.outT=Math.round((PHE.inT-5+ (hasFault('glycol')?2:0))*10)/10;
+  PHE.eff=hasFault('glycol')?Math.round(rnd(78,84)):Math.round(rnd(94,98));
+
+  Object.keys(CIR).forEach(ck=>{const cir=CIR[ck];
+    cir.cur = SIM.faults.has('temp_'+ck) ? cir.sp+rnd(5,8) : cir.sp+rnd(-0.6,0.8);
+    cir.cur=Math.round(cir.cur*10)/10;});
+
+  SIM.energy=Math.round(energy);
+  SIM.hpAvg=Math.round((11.5+(SIM.ambient-10)*0.17+(hasFault('hp')?4.2:0)+(hasFault('cond')?2.6:0))*10)/10;
+  SIM.compRun=running; SIM.condRun=condRun;
+
+  updateVisuals(); updateDashboard(); updateAlarms(); pushTrends(); drawMinimap();
+  if(SIM.selected) refreshInspector();
+}
+
+/* ---------- VISUAL STATE COLORS ---------- */
+const COL={run:0x22d27e,stop:0x5c7081,alarm:0xff4d4f,maint:0xffb020};
+function setLight(o,state){const c=COL[state]||COL.stop;
+  o.light.material.color.setHex(c);o.light.material.emissive.setHex(c);
+  o.light.material.emissiveIntensity=state==='stop'?.3:.9;}
+function updateVisuals(){
+  groups.comp.forEach(o=>{const c=o.rec;const s=c.alarm?'alarm':c.run?'run':'stop';setLight(o,s);
+    o.body.forEach(m=>{m.material.emissive&&m.material.emissive.setHex(c.run?CIR[c.cir].col:0x000000);
+      m.material.emissiveIntensity=c.run?0.12:0;});});
+  groups.ctrl.forEach(o=>{let s='run';
+    if(o.rec.id==='QMSM1'&&alarmsArr().length)s='maint';
+    setLight(o,s);});
+  groups.cond.forEach(o=>{setLight(o,o.rec.state);});
+  groups.rcv.forEach(o=>{setLight(o,RCV.alarm?'alarm':'run');
+    o.lvlMesh.scale.y=clamp(RCV.level/78,0.1,1.2);o.lvlMesh.material.color.setHex(RCV.alarm?0xff4d4f:0x27c6ff);
+    o.lvlMesh.material.emissive.setHex(RCV.alarm?0xff4d4f:0x27c6ff);});
+  groups.ves.forEach(o=>{setLight(o,SIM.faults.has('temp_'+o.rec.cir)?'alarm':'run');});
+  groups.phe.forEach(o=>{setLight(o,PHE.glycol<25?'alarm':'run');});
+}
+
+/* ---------- DASHBOARD ---------- */
+function updateDashboard(){
+  $('#sCompRun').textContent=SIM.compRun;
+  $('#sCondRun').textContent=SIM.condRun;
+  $('#sEnergy').textContent=SIM.energy;
+  $('#energyBar').style.width=clamp(SIM.energy/1200*100,0,100)+'%';
+  $('#sHP').innerHTML=SIM.hpAvg+'<small> bar</small>';
+  $('#sHP').style.color=SIM.hpAvg>17.5?'#ff5a4d':'#f5a623';
+  const na=alarmsArr().length;
+  $('#sAlarm').textContent=na; $('#sAlarm').style.color=na?'#ff5a4d':'#22d27e';
+  $('#ambT').textContent=Math.round(SIM.ambient)+'°';
+  $('#clock').textContent=TOD[SIM.tod].clock;
+  const el=$('#circuitRows');
+  el.innerHTML=Object.keys(CIR).map(ck=>{const cir=CIR[ck];
+    const arr=COMP.filter(c=>c.cir===ck);const run=arr.filter(c=>c.run).length;
+    return `<div class="crow"><span class="sw" style="background:${cir.hex}"></span>
+      <span class="nm" style="color:${cir.hex}">${cir.id}</span>
+      <span class="meta">temp <b>${(cir.cur??cir.sp).toFixed(1)}°</b> · suction <b>${cir.lp}</b> bar</span>
+      <span class="cnt">${run}/${arr.length}</span></div>`;}).join('');
+  $('#scenbadge').innerHTML=
+    `<span class="b"><i style="background:${SIM.season==='summer'?'#f5a623':'#37b6ff'}"></i>${SIM.season==='summer'?'Summer Operation':'Winter Operation'}</span>`+
+    `<span class="b"><i style="background:#27c6ff"></i>${SIM.tod==='morning'?'Morning':SIM.tod==='noon'?'Noon':'Night'}</span>`+
+    `<span class="b"><i style="background:${SIM.energy>800?'#ff5a4d':'#22d27e'}"></i>${SIM.energy} kW</span>`;
+  if(SIM.keyLight){const warm=SIM.season==='summer'?1:0.7;SIM.keyLight.color.setRGB(1,warm,warm*0.85);}
+}
+
+/* ---------- ALARMS ---------- */
+function alarmsArr(){
+  const out=[];
+  COMP.forEach(c=>{if(c.alarm)out.push({lvl:'crit',t:c.id,d:c.alarm});});
+  COND.forEach(c=>{if(c.state==='alarm')out.push({lvl:'crit',t:c.id,d:'Low condenser efficiency'});
+    if(c.state==='maint')out.push({lvl:'warn',t:c.id,d:'Under maintenance'});});
+  if(RCV.alarm)out.push({lvl:RCV.level<=15?'crit':'warn',t:'RECEIVER',d:RCV.alarm});
+  if(PHE.glycol<25)out.push({lvl:'crit',t:'P.H.E',d:'Low glycol concentration — freeze risk ('+PHE.freeze+'°C)'});
+  Object.keys(CIR).forEach(ck=>{if(SIM.faults.has('temp_'+ck))out.push({lvl:'crit',t:CIR[ck].id,d:'Circuit high-temperature alarm'});});
+  if(SIM.season==='summer'&&SIM.tod==='noon'&&SIM.hpAvg>17)
+    out.push({lvl:'warn',t:'SUMMER',d:'Summer operation — monitor discharge pressure & condenser efficiency'});
+  return out;
+}
+function updateAlarms(){
+  const arr=alarmsArr(), el=$('#alarmlist');
+  if(!arr.length){el.innerHTML='<div class="noal">✓ System operating within normal limits</div>';return;}
+  el.innerHTML=arr.map(a=>`<div class="al ${a.lvl}"><span class="ic">${a.lvl==='crit'?'⛔':'⚠'}</span>
+    <span class="tx"><b>${a.t}</b><span>${a.d}</span></span></div>`).join('');
+}
+
+/* ============================================================
+   INSPECTOR
+   ============================================================ */
+function selectComponent(kind,id){
+  if(SIM.selGroup){SIM.selGroup.group.scale.set(1,1,1);}
+  SIM.selected={kind,id};
+  let g=null;
+  if(kind==='comp')g=groups.comp.find(o=>o.rec.id===id);
+  else if(kind==='ctrl')g=groups.ctrl.find(o=>o.rec.id===id);
+  else if(kind==='cond')g=groups.cond.find(o=>o.rec.id===id);
+  else if(kind==='rcv')g=groups.rcv[0];
+  else if(kind==='ves')g=groups.ves.find(o=>o.rec.id===id);
+  else if(kind==='phe')g=groups.phe[0];
+  else if(kind==='unit')g=groups.unit.find(o=>o.rec.n===id);
+  if(kind==='chem'){openChem();return;}
+  SIM.selGroup=g; if(g)g.group.scale.set(1.08,1.08,1.08);
+  refreshInspector();
+}
+function pill(state){const map={run:['run','RUN'],stop:['stop','STOP'],alarm:['alarm','ALARM'],maint:['maint','MAINT']};
+  const[m,t]=map[state]||map.stop;return `<span class="pill ${m}">${t}</span>`;}
+function kv(label,val){return `<div class="kv"><span>${label}</span><b>${val}</b></div>`;}
+function refreshInspector(){
+  const sel=SIM.selected; if(!sel)return; const el=$('#inspbody');
+  let icoCol='#27c6ff',ico='?',title='',sub='',rows='',note='';
+  if(sel.kind==='comp'){const c=compById(sel.id),cir=CIR[c.cir];
+    icoCol=cir.hex;ico='⚙';title=c.id;sub='Compressor · '+cir.id;
+    const st=c.alarm?'alarm':c.run?'run':'stop';
+    rows=kv('Status',pill(st))+kv('Load',(c.load||0)+' %')+
+      kv('High Pressure HP',(c.hp||0)+' bar')+kv('Low Pressure LP',(c.lp||0)+' bar')+
+      kv('Suction Temp',(c.st||0)+' °C')+kv('Discharge Temp',(c.dt||0)+' °C')+
+      kv('Running Hours',c.hours.toLocaleString()+' h')+kv('Compressor Group',c.controlGroup)+kv('Controlled by',c.controlledBy)+kv('Master Authority',c.masterAuthority)+
+      kv('Active Alarms',c.alarm?('<span style="color:#ff7173">'+c.alarm+'</span>'):'None');
+  }
+  else if(sel.kind==='ctrl'){const p=ctrlById(sel.id);const na=alarmsArr().length;
+    const isMaster=p.id==='QMSM1';icoCol=isMaster?'#ffb020':p.id==='SCADA'?'#1ee0e0':p.id.indexOf('QCF')===0?'#2ee06a':'#37b6ff';
+    ico=isMaster?'▣':p.id==='SCADA'?'🖥':'▤';title=p.id;sub=p.type;
+    if(p.id==='QMSM1'){
+      rows=kv('Function','Master PLC')+kv('CPU Configuration','Redundant CPU')+
+        kv('CPU-A','<span style="color:#22d27e">Main · Running</span>')+
+        kv('CPU-B','<span style="color:#37b6ff">Standby · Healthy</span>')+
+        kv('Controlled Equipment','Compressor Group A, Glycol Pump A, Water Pump A')+
+        kv('SCADA Communication','<span style="color:#1ee0e0">Active</span>')+
+        kv('Slave Communication','QMSM2, QCF1–QCF4')+
+        kv('Alarm Status',na?('<span style="color:#ff7173">'+na+' active</span>'):'None')+
+        kv('Control Mode','Auto / Manual available · Current: Auto')+commRow(p.id);
+      note='QMSM1 is the Master PLC with a redundant CPU system (A main, B standby). It commands QMSM2 and QCF1–QCF4 and exposes monitoring/control to SCADA.';
+    } else if(p.id==='QMSM2'){
+      rows=kv('Function','Slave Panel')+kv('CPU Configuration','No independent CPU')+
+        kv('Controlled Equipment','Compressor Group B, Glycol Pump B, Water Pump B')+
+        kv('Master Communication','QMSM1')+
+        kv('Alarm Status',na?('<span style="color:#ff7173">'+na+' active</span>'):'None')+
+        kv('Control Mode','Auto / Manual available · Current: Auto')+commRow(p.id);
+      note='QMSM2 has no independent CPU. It receives commands from QMSM1 and returns feedback.';
+    } else if(p.id==='SCADA'){
+      rows=kv('Function','Monitoring & operator control')+kv('Connected Through','QMSM1')+
+        kv('Displays','Compressors, pumps, alarms, pressures, temps, energy, trends, modes')+
+        kv('Operator Commands','<span style="color:#22d27e">Available</span>')+
+        kv('Direct Field Control','<span style="color:#ff7173">No</span>');
+      note='SCADA is the operator monitoring/control interface. It is not a field controller and communicates only through QMSM1.';
+    } else {
+      rows=kv('Function','Slave Panel')+kv('Area','Production Area')+
+        kv('Connected Equipment','Air coolers, valve stations, refrigeration machines')+
+        kv('Temperature Feedback','<span style="color:#22d27e">Live</span>')+
+        kv('Local Alarms','Monitored')+
+        kv('Communication','QMSM1')+
+        kv('Control Mode','Auto / Manual available · Current: Auto')+commRow(p.id);
+      note=p.id+' is a production-area slave panel reporting to QMSM1.';
+    }
+  }
+    else if(sel.kind==='cond'){const c=COND.find(x=>x.id===sel.id);
+    icoCol='#ff6a3d';ico='❄';title=c.id;sub='Air-cooled condenser';
+    rows=kv('Status',pill(c.state))+kv('Fan Speed',Math.round(c.fan)+' %')+
+      kv('Efficiency',Math.round(c.eff)+' %')+kv('Control / Monitoring','AKC')+
+      kv('Chemical Treatment','HYDREX 7321/7410/2867');
+    note='Condensers are managed via the AKC system. Chemical dosing maintains heat-transfer efficiency and corrosion protection. Open “Process Diagram” → Chemicals for details.';
+  }
+  else if(sel.kind==='rcv'){icoCol='#27c6ff';ico='⛁';title='LIQUID RECEIVER';sub='Central liquid receiver';
+    rows=kv('Liquid Level',RCV.level+' %')+kv('Pressure',RCV.press+' bar')+kv('Temperature',RCV.temp+' °C')+
+      kv('Valve Status',RCV.valve==='open'?'Open':'Closed')+
+      kv('Alarm',RCV.alarm?('<span style="color:#ff7173">'+RCV.alarm+'</span>'):'None');
+    note='The receiver collects liquid R-22 from the condensers and distributes it to the four vessels per circuit demand.';
+  }
+  else if(sel.kind==='ves'){const v=VES.find(x=>x.id===sel.id),cir=CIR[v.cir];
+    icoCol=cir.hex;ico='◍';title=v.id;sub=v.name;
+    rows=kv('Circuit','<span style="color:'+cir.hex+'">'+cir.id+'</span>')+kv('Level',v.level+' %')+
+      kv('Saturation Temp',cir.sp+' °C')+kv('Status',pill(SIM.faults.has('temp_'+v.cir)?'alarm':'run'));
+    note=v.cir==='c12'?'The -12°C circuit has two vessels (A/B) because it serves the largest cooling load and the most compressors (7).':'Dedicated vessel for a single circuit, colored by circuit.';
+  }
+  else if(sel.kind==='phe'){icoCol='#1ee0e0';ico='▦';title='P.H.E';sub='Plate heat exchanger';
+    rows=kv('Glycol',PHE.glycol+' %')+kv('Water',PHE.water+' %')+
+      kv('Freezing Point',PHE.freeze+' °C')+kv('Inlet Temp',PHE.inT+' °C')+kv('Outlet Temp',PHE.outT+' °C')+
+      kv('Efficiency',PHE.eff+' %');
+    note='The exchanger transfers cooling energy from the R-22 refrigerant circuit to the water-glycol circuit without direct mixing between the two fluids.';
+  }
+  else if(sel.kind==='unit'){const u=UNITS.find(x=>x.n===sel.id);
+    icoCol='#'+u.col.toString(16).padStart(6,'0');ico='▣';title='Unit '+u.n;sub='Cooling load zone';
+    rows=kv('Target Temperature',(u.t>0?'+':'')+u.t+' °C')+kv('Group',
+      u.t===-8?'Units 1-3':u.t===8?'Units 4-5':u.t===2?'Units 6-7':'Units 8-9');
+  }
+  el.innerHTML=`<div class="insp-head"><div class="ico" style="background:${icoCol}">${ico}</div>
+    <div class="t"><b>${title}</b><span>${sub}</span></div></div>${rows}${note?'<div class="insp-note">'+note+'</div>':''}`;
+}
+
+/* ============================================================
+   TREND CHARTS
+   ============================================================ */
+let chT,chP,chE; const MAXP=24;
+function initCharts(){
+  const base={responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{display:false},y:{ticks:{color:'#7f95a8',font:{size:9}},grid:{color:'rgba(34,56,74,.4)'}}}};
+  const ds=(c)=>({data:[],borderColor:c,backgroundColor:c+'22',borderWidth:2,tension:.35,pointRadius:0,fill:true});
+  chT=new Chart($('#chT'),{type:'line',data:{labels:[],datasets:[
+    {...ds('#f5a623'),label:'Ambient'},{...ds('#37b6ff'),label:'-12'},{...ds('#2f5cf0'),label:'-41'}]},options:base});
+  chP=new Chart($('#chP'),{type:'line',data:{labels:[],datasets:[
+    {...ds('#ff5a4d'),label:'HP'},{...ds('#2ee06a'),label:'LP+4'}]},options:base});
+  chE=new Chart($('#chE'),{type:'line',data:{labels:[],datasets:[{...ds('#27c6ff'),label:'kW'}]},options:base});
+}
+function pushTrends(){
+  const push=(ch,vals)=>{ch.data.labels.push('');if(ch.data.labels.length>MAXP)ch.data.labels.shift();
+    ch.data.datasets.forEach((d,i)=>{d.data.push(vals[i]);if(d.data.length>MAXP)d.data.shift();});ch.update();};
+  push(chT,[SIM.ambient,CIR.c12.cur??-12,CIR.c41.cur??-41]);
+  push(chP,[SIM.hpAvg,CIR.c4.lp]);
+  push(chE,[SIM.energy]);
+  $('#ctT').textContent=Math.round(SIM.ambient)+'°C';
+  $('#ctP').textContent=SIM.hpAvg+' bar';
+  $('#ctE').textContent=SIM.energy+' kW';
+}
+
+/* ============================================================
+   MINIMAP (top-down)
+   ============================================================ */
+const mmc=$('#mmcanvas'), mmx=mmc.getContext('2d');
+function w2m(x,z){return [ (x+48)/96*mmc.width, (z+32)/64*mmc.height ];}
+function drawMinimap(){
+  mmx.clearRect(0,0,mmc.width,mmc.height);
+  mmx.fillStyle='#0a0f16';mmx.fillRect(0,0,mmc.width,mmc.height);
+  mmx.strokeStyle='rgba(34,56,74,.5)';mmx.lineWidth=1;
+  for(let i=0;i<=8;i++){const x=i/8*mmc.width;mmx.beginPath();mmx.moveTo(x,0);mmx.lineTo(x,mmc.height);mmx.stroke();}
+  const dot=(x,z,col,r=4)=>{const[mx,mz]=w2m(x,z);mmx.fillStyle=col;mmx.beginPath();mmx.arc(mx,mz,r,0,TAU);mmx.fill();};
+  groups.comp.forEach(o=>{const p=o.group.position;const c=o.rec;
+    dot(p.x,p.z,c.alarm?'#ff4d4f':c.run?'#22d27e':'#5c7081',3.4);});
+  groups.cond.forEach(o=>{const p=o.group.position;
+    dot(p.x,p.z,o.rec.state==='alarm'?'#ff4d4f':o.rec.state==='maint'?'#ffb020':o.rec.state==='run'?'#ff6a3d':'#5c7081',4);});
+  groups.rcv.forEach(o=>{const p=o.group.position;dot(p.x,p.z,RCV.alarm?'#ff4d4f':'#27c6ff',6);});
+  groups.ves.forEach(o=>{const p=o.group.position;dot(p.x,p.z,CIR[o.rec.cir].hex,5);});
+  groups.phe.forEach(o=>{const p=o.group.position;dot(p.x,p.z,'#1ee0e0',5);});
+  groups.unit.forEach(o=>{const p=o.group.position;dot(p.x,p.z,'#'+o.rec.col.toString(16).padStart(6,'0'),3);});
+  const[cxx,czz]=w2m(camera.position.x,camera.position.z);
+  mmx.strokeStyle='#ffffff';mmx.lineWidth=1.5;mmx.beginPath();mmx.arc(cxx,czz,7,0,TAU);mmx.stroke();
+  const[tx,tz]=w2m(cam.tgt.x,cam.tgt.z);mmx.beginPath();mmx.moveTo(cxx,czz);mmx.lineTo(tx,tz);mmx.stroke();
+  if(SIM.selGroup){const p=SIM.selGroup.group.position;const[sx,sz]=w2m(p.x,p.z);
+    mmx.strokeStyle='#ffd166';mmx.lineWidth=2;mmx.beginPath();mmx.arc(sx,sz,9,0,TAU);mmx.stroke();}
+}
+
+/* ============================================================
+   TRAINING MODE
+   ============================================================ */
+const TRAIN=[
+  {sel:['ctrl','QMSM1'],tgt:[-45,3,-3],title:'1. Electrical Control — Master PLC',tx:'The control hierarchy starts at QMSM1, the Master PLC with a redundant CPU system (CPU-A main, CPU-B standby). It commands QMSM2 (slave) and QCF1–QCF4 (production-area slaves), and connects to SCADA for operator monitoring and control. Open “Electrical Map” for the full block diagram.'},
+  {sel:['comp','C01'],tgt:[-30,3,-1],title:'2. Compressors — Cooling Begins',
+   tx:'15 compressors are distributed: 3 for the +4°C circuit, 5 for -41°C, and 7 for -12°C. The -12°C circuit has the most because it carries the highest cooling demand. Each compressor raises R-22 vapor pressure & temperature and pushes it to the condensers.'},
+  {sel:['cond','COND1'],tgt:[-7,5,0],title:'3. Condensers — Condensation',
+   tx:'9 condensers (COND1–COND9) cool the R-22 vapor and condense it into liquid by rejecting heat to the air. They are managed by AKC and chemically dosed (HYDREX 7321/7410 for heat-transfer efficiency, 2867 for corrosion protection).'},
+  {sel:['rcv','RCV'],tgt:[8,3,0],title:'4. Liquid Receiver',
+   tx:'After the condensers, the liquid collects in the central receiver, which stores it and distributes it to the circuits. It displays level, pressure, temperature, valve status, and alarm.'},
+  {sel:['ves','V-12A'],tgt:[20,3,3],title:'5. Vessels',
+   tx:'Liquid is distributed to 4 vessels: one for -41°C, one for +4°C, and two for -12°C (A/B). The -12°C circuit gets two because it serves a larger load and the most compressors. Each vessel is color-coded by its circuit.'},
+  {sel:['phe','PHE'],tgt:[30,3,0],title:'6. Plate Heat Exchanger P.H.E',
+   tx:'The exchanger cools the water-glycol mix (35% glycol / 65% water, freezing point ≈ -18°C). It transfers cooling energy from the R-22 circuit to the glycol circuit without direct mixing.'},
+  {sel:['unit',1],tgt:[8,3,22],title:'7. Load Units 1-9',
+   tx:'Cooling is distributed across zones: Units 1-3 at -8°C, 4-5 at +8°C, 6-7 at +2°C, and 8-9 at +25°C. Each zone has an interactive temperature tag and a distinct color.'},
+  {sel:null,tgt:[0,4,2],title:'8. Monitoring & Control + Flow',
+   tx:'SCADA monitors and controls all of MR4; AKC handles the condensers. Follow the orange arrows for the R-22 path: compressors → condensers → receiver → vessels → exchanger. Cyan arrows show the water-glycol path. Try “Faults” mode to simulate the six faults.'},
+];
+let trIdx=0;
+function startTraining(){trIdx=0;$('#training').classList.add('show');showTrain();}
+function showTrain(){const s=TRAIN[trIdx];$('#trTitle').textContent=s.title;$('#trText').textContent=s.tx;
+  $('.step').textContent=trIdx+1;$('#trProg').textContent=`${trIdx+1} / ${TRAIN.length}`;
+  $('#trPrev').disabled=trIdx===0;$('#trNext').textContent=trIdx===TRAIN.length-1?'Done':'Next';
+  flyTo(s.tgt[0],s.tgt[1],s.tgt[2]);
+  if(s.sel)selectComponent(s.sel[0],s.sel[1]);}
+function endTraining(){$('#training').classList.remove('show');if(SIM.mode==='training')setMode('normal');}
+function flyTo(x,y,z){const start={...cam.tgt},startR=cam.r,t0=performance.now();
+  const dur=700;(function step(){const t=clamp((performance.now()-t0)/dur,0,1);const e=1-Math.pow(1-t,3);
+    cam.tgt.set(lerp(start.x,x,e),lerp(start.y,y,e),lerp(start.z,z,e));cam.r=lerp(startR,42,e);
+    if(t<1)requestAnimationFrame(step);})();}
+
+/* ============================================================
+   FAULT MODE
+   ============================================================ */
+const FAULTS=[
+  {id:'compfail',name:'Compressor Fault',d:'Stops a compressor and raises an alarm',apply:()=>{const c=COMP.find(x=>x.run)||COMP[10];c.failed=true;},
+   clear:()=>COMP.forEach(c=>c.failed=false)},
+  {id:'hp',name:'High Discharge Pressure',d:'HP spike and discharge alarm',apply:()=>SIM.faults.add('hp'),clear:()=>SIM.faults.delete('hp')},
+  {id:'rcv',name:'Low Receiver Level',d:'Critical liquid level drop',apply:()=>{SIM.faults.add('rcv');RCV.level=14;},clear:()=>SIM.faults.delete('rcv')},
+  {id:'cond',name:'Poor Condenser Efficiency',d:'Lower efficiency + rising HP',apply:()=>{SIM.faults.add('cond');COND[2].forceAlarm=true;},
+   clear:()=>{SIM.faults.delete('cond');COND.forEach(c=>c.forceAlarm=false);}},
+  {id:'glycol',name:'Low Glycol Concentration',d:'Freeze risk in water-glycol circuit',apply:()=>SIM.faults.add('glycol'),clear:()=>SIM.faults.delete('glycol')},
+  {id:'temp',name:'Circuit High Temperature',d:'High-temp alarm on the -12°C circuit',apply:()=>SIM.faults.add('temp_c12'),clear:()=>SIM.faults.delete('temp_c12')},
+];
+function renderFaultPanel(){
+  const el=$('#inspbody');
+  el.innerHTML=`<div class="insp-head"><div class="ico" style="background:#ff5a4d">⚠</div>
+    <div class="t"><b>Fault Simulation Mode</b><span>Toggle faults to observe their effect</span></div></div>
+    <div style="display:flex;flex-direction:column;gap:7px;margin-top:6px">
+    ${FAULTS.map(f=>{const on=isFaultOn(f);
+      return `<button class="fbtn ${on?'on':''}" data-fault="${f.id}" style="text-align:left;padding:9px 11px;display:flex;flex-direction:column;align-items:flex-start;gap:2px">
+      <span style="font-weight:700">${on?'⛔ ':''}${f.name}</span>
+      <span style="font-size:11px;color:${on?'#04222e':'var(--muted)'}">${f.d}</span></button>`;}).join('')}
+    </div>
+    <div class="insp-note">Each fault is reflected immediately on the model, dashboard, alarms and charts. Toggle the button again to clear the fault.</div>`;
+  $$('.fbtn').forEach(b=>b.onclick=()=>toggleFault(b.dataset.fault));
+}
+function isFaultOn(f){if(f.id==='compfail')return COMP.some(c=>c.failed);
+  if(f.id==='cond')return SIM.faults.has('cond');if(f.id==='temp')return SIM.faults.has('temp_c12');
+  return SIM.faults.has(f.id);}
+function toggleFault(id){const f=FAULTS.find(x=>x.id===id);if(isFaultOn(f))f.clear();else f.apply();
+  renderFaultPanel();simTick();}
+
+/* ============================================================
+   MODALS CONTENT
+   ============================================================ */
+function openModal(id){$(id).classList.add('show');}
+function closeModals(){$$('.modal-bg').forEach(m=>m.classList.remove('show'));}
+function openChem(){
+  $('#chemBody').innerHTML=`
+   <p style="color:var(--muted);margin-bottom:14px">The chemical dosing system maintains condenser efficiency and protects the equipment. It is managed within the AKC system.</p>
+   <div class="chem"><div class="badge" style="background:#2e86de">HYDREX<br>7321</div>
+     <div class="d"><b>Performance enhancer</b><span>Maintains condenser efficiency and supports heat-transfer performance by preventing scale and deposits on the heat-exchange surfaces.</span></div></div>
+   <div class="chem"><div class="badge" style="background:#16a085">HYDREX<br>7410</div>
+     <div class="d"><b>Deposit / biological control</b><span>Complements 7321 in keeping surfaces clean, sustaining heat-transfer efficiency and reducing biological growth.</span></div></div>
+   <div class="chem"><div class="badge" style="background:#c0392b">HYDREX<br>2867</div>
+     <div class="d"><b>Corrosion & rust inhibitor</b><span>Protects the metal against corrosion and rust, extending the life of the condensers and water lines.</span></div></div>
+   <div class="insp-note">System effect: a clean, efficient condenser means lower discharge pressure (HP) and lower energy use. Degraded treatment raises HP and consumption — try it in Faults mode “Poor Condenser Efficiency”.</div>`;
+  openModal('#mChem');
+}
+function buildTables(){
+  let t1=`<h3 style="color:var(--accent);margin-bottom:6px;font-family:Rajdhani">Electrical Control Hierarchy</h3>
+   <table><tr><th>Panel</th><th>Role</th><th>CPU</th><th>Controls</th><th>Comms</th></tr>
+   <tr><td>QMSM1</td><td>Master PLC</td><td>Redundant (A/B)</td><td>Comp Group A · Glycol A · Water A</td><td>SCADA, QMSM2, QCF1–4</td></tr>
+   <tr><td>QMSM2</td><td>Slave</td><td>None</td><td>Comp Group B · Glycol B · Water B</td><td>QMSM1</td></tr>
+   <tr><td>SCADA</td><td>Operator HMI</td><td>—</td><td>Monitor/commands via QMSM1</td><td>QMSM1</td></tr>
+   <tr><td>QCF1–QCF4</td><td>Slave (Prod.)</td><td>None</td><td>Air coolers · valves · machines · alarms</td><td>QMSM1</td></tr></table>
+   <h3 style="color:var(--accent);margin:18px 0 6px;font-family:Rajdhani">Compressor ↔ Control Group</h3>
+   <table><tr><th>Compressor</th><th>Circuit</th><th>Group</th><th>Master</th><th>kW</th></tr>`;
+  COMP.forEach(c=>{const cir=CIR[c.cir];
+    t1+=`<tr><td>${c.id}</td><td><span class="sw" style="background:${cir.hex}"></span>${cir.id}</td><td>Group ${c.grp}</td><td>${c.master}</td><td>${Math.round(c.kW)}</td></tr>`;});
+  t1+=`</table>`;
+  let t2=`<h3 style="color:var(--accent);margin:18px 0 6px;font-family:Rajdhani">Condenser Distribution</h3>
+   <table><tr><th>Condenser</th><th>Control</th><th>Chemical Treatment</th></tr>`;
+  COND.forEach(c=>{t2+=`<tr><td>${c.id}</td><td>AKC</td><td>HYDREX 7321 / 7410 / 2867</td></tr>`;});
+  t2+=`</table>`;
+  let t3=`<h3 style="color:var(--accent);margin:18px 0 6px;font-family:Rajdhani">Cooling Load Zones (Units 1-9)</h3>
+   <table><tr><th>Units</th><th>Target Temp</th><th>Color</th></tr>
+   <tr><td>1 – 3</td><td>-8°C</td><td><span class="sw" style="background:#5b8def"></span>Blue</td></tr>
+   <tr><td>4 – 5</td><td>+8°C</td><td><span class="sw" style="background:#f5a623"></span>Orange</td></tr>
+   <tr><td>6 – 7</td><td>+2°C</td><td><span class="sw" style="background:#b06bdc"></span>Purple</td></tr>
+   <tr><td>8 – 9</td><td>+25°C</td><td><span class="sw" style="background:#ff5a4d"></span>Red</td></tr></table>`;
+  let t4=`<h3 style="color:var(--accent);margin:18px 0 6px;font-family:Rajdhani">Vessel Distribution by Circuit</h3>
+   <table><tr><th>Vessel</th><th>Circuit</th><th>Note</th></tr>
+   <tr><td>V-41</td><td><span class="sw" style="background:#2f5cf0"></span>-41°C</td><td>Single vessel</td></tr>
+   <tr><td>V+4</td><td><span class="sw" style="background:#2ee06a"></span>+4°C</td><td>Single vessel</td></tr>
+   <tr><td>V-12A / V-12B</td><td><span class="sw" style="background:#37b6ff"></span>-12°C</td><td>Two vessels — highest load & most compressors</td></tr></table>`;
+  let t5=`<h3 style="color:var(--accent);margin:18px 0 6px;font-family:Rajdhani">Production Area QCF Panels</h3>
+   <table><tr><th>Panel</th><th>Area</th><th>Connected equipment</th><th>Feedback</th><th>Local alarms</th><th>Comms</th></tr>
+   <tr><td>QCF1</td><td>Production</td><td>Air coolers, valve stations, refrigeration machines</td><td>Temperature</td><td>Monitored</td><td>QMSM1</td></tr>
+   <tr><td>QCF2</td><td>Production</td><td>Air coolers, valve stations, refrigeration machines</td><td>Temperature</td><td>Monitored</td><td>QMSM1</td></tr>
+   <tr><td>QCF3</td><td>Production</td><td>Air coolers, valve stations, refrigeration machines</td><td>Temperature</td><td>Monitored</td><td>QMSM1</td></tr>
+   <tr><td>QCF4</td><td>Production</td><td>Air coolers, valve stations, refrigeration machines</td><td>Temperature</td><td>Monitored</td><td>QMSM1</td></tr></table>`;
+  let t6=`<h3 style="color:var(--accent);margin:18px 0 6px;font-family:Rajdhani">Signal Color Legend</h3>
+   <table><tr><th>Signal</th><th>Color</th></tr>
+   <tr><td>Control command</td><td><span class="sw" style="background:#3b82f6"></span>Blue</td></tr>
+   <tr><td>Feedback signal</td><td><span class="sw" style="background:#22d27e"></span>Green</td></tr>
+   <tr><td>Alarm signal</td><td><span class="sw" style="background:#ff4d4f"></span>Red</td></tr>
+   <tr><td>SCADA communication</td><td><span class="sw" style="background:#1ee0e0"></span>Cyan</td></tr>
+   <tr><td>R-22 refrigerant flow</td><td><span class="sw" style="background:#ff6a3d"></span>Orange</td></tr>
+   <tr><td>Glycol-water flow</td><td><span class="sw" style="background:#1ee0e0"></span>Cyan</td></tr>
+   <tr><td>Hardwired I/O</td><td><span class="sw" style="background:#f5c542"></span>Yellow</td></tr></table>
+   <div class="insp-note" style="margin-top:12px">Compressor Group A/B assignment is used for training visualization and must be verified against approved site control drawings.</div>`;
+  $('#tablesBody').innerHTML=t1+t2+t5+t6+t3+t4;
+}
+function buildDiagram(){
+  $('#diagramBody').innerHTML=`
+   <p style="color:var(--muted);margin-bottom:14px">R-22 refrigerant path and the water-glycol circuit inside MR4.</p>
+   <div style="background:var(--bg0);border:1px solid var(--line);border-radius:10px;padding:16px;overflow-x:auto">
+   <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;font-family:Rajdhani;font-size:13px;min-width:560px">
+     ${flowNode('Compressors','15 units','#37b6ff')}${arrow('#ff6a3d')}
+     ${flowNode('Condensers','9 + AKC','#ff6a3d')}${arrow('#ff6a3d')}
+     ${flowNode('Liquid Receiver','store / distribute','#27c6ff')}${arrow('#ff6a3d')}
+     ${flowNode('Vessels','4 vessels','#2ee06a')}${arrow('#ff6a3d')}
+     ${flowNode('P.H.E','plate exchanger','#1ee0e0')}
+   </div>
+   <div style="text-align:center;margin:14px 0;color:var(--gly)">↓ Water + glycol (35/65) ↓</div>
+   <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;font-family:Rajdhani;font-size:13px;min-width:560px">
+     ${flowNode('Load Units','U1-U9','#5b8def')}${arrow('#1ee0e0','return')}
+     ${flowNode('P.H.E','re-cool','#1ee0e0')}
+   </div></div>
+   <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+     <button onclick="openChem()">🧪 Chemicals</button>
+     <button onclick="openModal('#mTables')">📋 Reference Tables</button>
+     <button onclick="openModal('#mPHE')">🔥 P.H.E Explained</button>
+   </div>
+   <div class="insp-note" style="margin-top:14px">Refrigerant: <b style="color:var(--ref)">R-22</b> — MR4 monitored & controlled via <b style="color:var(--accent)">SCADA</b>, condensers via <b style="color:#ff6a3d">AKC</b>.</div>`;
+}
+function flowNode(t,s,c){return `<div style="background:var(--bg2);border:1px solid ${c};border-radius:9px;padding:10px 12px;text-align:center;min-width:88px">
+  <b style="color:${c};display:block;font-size:14px">${t}</b><span style="color:var(--muted);font-size:11px">${s}</span></div>`;}
+function arrow(c,lbl=''){return `<div style="color:${c};font-size:20px;display:flex;flex-direction:column;align-items:center">▶${lbl?'<span style="font-size:9px">'+lbl+'</span>':''}</div>`;}
+function buildPHEModal(){
+  $('#pheBody').innerHTML=`
+   <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+     <div class="stat" style="flex:1;min-width:120px"><div class="l">GLYCOL</div><div class="v" style="color:#1ee0e0">35<small>%</small></div></div>
+     <div class="stat" style="flex:1;min-width:120px"><div class="l">WATER</div><div class="v" style="color:#37b6ff">65<small>%</small></div></div>
+     <div class="stat" style="flex:1;min-width:120px"><div class="l">FREEZING POINT</div><div class="v" style="color:#f5a623">-18<small>°C</small></div></div>
+   </div>
+   <p style="line-height:1.8">The plate heat exchanger is the main heat-exchange point. Its function is to cool the water-glycol mixture composed of <b>35% glycol</b> and <b>65% water</b>, with a freezing point of approximately <b>-18°C</b>, which prevents freezing in the cold circuits.</p>
+   <div class="insp-note" style="margin-top:14px">Educational principle: the exchanger transfers cooling energy from the R-22 refrigerant circuit to the water-glycol circuit <b>without direct mixing</b> between the two fluids — they pass through separate, adjacent plates. A drop in glycol concentration raises the freezing point and threatens the circuit (try it in Faults mode).</div>`;
+}
+
+/* ============================================================
+   UI WIRING
+   ============================================================ */
+function setSeason(s){SIM.season=s;$$('.seasonbtn').forEach(b=>b.classList.toggle('on',b.dataset.season===s));simTick();}
+function setTod(t){SIM.tod=t;$$('.todbtn').forEach(b=>b.classList.toggle('on',b.dataset.tod===t));simTick();}
+function setMode(m){SIM.mode=m;$$('.modebtn').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
+  if(m==='training'){startTraining();}
+  else {$('#training').classList.remove('show');}
+  if(m==='fault'){renderFaultPanel();}
+  else {if(SIM.selected)refreshInspector();else $('#inspbody').innerHTML=emptyInsp();}
+}
+function emptyInsp(){return `<div class="insp-empty"><span class="big">⟟</span>Click any element in the model<br>to view its live technical data</div>`;}
+
+function wireUI(){
+  $$('.seasonbtn').forEach(b=>b.onclick=()=>setSeason(b.dataset.season));
+  $$('.todbtn').forEach(b=>b.onclick=()=>setTod(b.dataset.tod));
+  $$('.modebtn').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+  $('#btnRun').onclick=()=>{SIM.running=!SIM.running;
+    $('#btnRun').classList.toggle('on',SIM.running);
+    $('#btnRun').textContent=SIM.running?'⏸ Stop Simulation':'▶ Start Simulation';simTick();};
+  $('#btnDiagram').onclick=()=>openModal('#mDiagram');
+  $('#btnElec').onclick=()=>openModal('#mElec');
+  $$('.layerbtn').forEach(b=>b.onclick=()=>setLayer(b.dataset.layer));
+  $('#dockHead').onclick=()=>$('#dock').classList.toggle('collapsed');
+  $$('[data-close]').forEach(b=>b.onclick=closeModals);
+  $$('.modal-bg').forEach(m=>m.onclick=e=>{if(e.target===m)closeModals();});
+  $('#trNext').onclick=()=>{if(trIdx<TRAIN.length-1){trIdx++;showTrain();}else endTraining();};
+  $('#trPrev').onclick=()=>{if(trIdx>0){trIdx--;showTrain();}};
+  $('#trExit').onclick=endTraining;
+  window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModals();});
+}
+window.openChem=openChem; window.openModal=openModal;
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+function buildElecMap(){
+  const box=(t,s,c,big)=>`<div style="background:var(--bg2);border:1px solid ${c};border-radius:9px;padding:${big?'12px 14px':'8px 12px'};min-width:150px"><b style="color:${c};font-family:Rajdhani;font-size:${big?'15px':'13px'}">${t}</b><div style="color:var(--muted);font-size:11px;margin-top:2px">${s}</div></div>`;
+  const child=(t,s,c)=>`<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><span style="color:var(--line2);font-family:Rajdhani">└─</span>${box(t,s,c)}</div>`;
+  $('#elecBody').innerHTML=`
+   <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;font-family:Rajdhani;font-size:12px">
+     <span style="color:#3b82f6">▬ Control command</span><span style="color:#22d27e">▬ Feedback</span>
+     <span style="color:#ff4d4f">▬ Alarm</span><span style="color:#1ee0e0">▬ SCADA comms</span></div>
+   ${box('QMSM1 — MASTER PLC','Redundant CPU system · main control authority','#ffb020',true)}
+   <div style="margin:6px 0 0 18px;border-left:2px solid var(--line2);padding-left:14px">
+     ${child('CPU-A','Main CPU · Running','#22d27e')}
+     ${child('CPU-B','Standby CPU · Healthy','#37b6ff')}
+     ${child('SCADA','Operator monitoring/control interface (through QMSM1)','#1ee0e0')}
+     ${child('QMSM2 — Slave Panel','No CPU · Compressor Group B, Glycol Pump B, Water Pump B','#37b6ff')}
+     ${child('QCF1 — Slave','Production area · air coolers, valves, machines, alarms','#2ee06a')}
+     ${child('QCF2 — Slave','Production area · air coolers, valves, machines, alarms','#2ee06a')}
+     ${child('QCF3 — Slave','Production area · air coolers, valves, machines, alarms','#2ee06a')}
+     ${child('QCF4 — Slave','Production area · air coolers, valves, machines, alarms','#2ee06a')}
+   </div>
+   <h3 style="color:var(--accent);margin:16px 0 6px;font-family:Rajdhani">Communication Network</h3>
+   <table><tr><th>Link</th><th>Direction</th><th>Signals</th><th>Typical medium</th></tr>
+   <tr><td>QMSM1 ↔ SCADA</td><td>two-way</td><td>monitoring, operator commands</td><td>Ethernet / OPC-UA</td></tr>
+   <tr><td>QMSM1 ↔ QMSM2</td><td>two-way (master→slave)</td><td>command + feedback</td><td>PLC link · PROFINET</td></tr>
+   <tr><td>QMSM1 ↔ QCF1–QCF4</td><td>two-way</td><td>command, feedback, alarm</td><td>Fieldbus · PROFIBUS-DP</td></tr>
+   <tr><td>Panel → pumps</td><td>one-way control</td><td>start/stop, status</td><td>Hardwired I/O</td></tr></table>
+   <div style="font-size:11px;color:var(--muted);margin:4px 0 0">In the 3D view, moving dots show live direction — <b style="color:#3b82f6">blue</b> = command (out from QMSM1), <b style="color:#22d27e">green</b> = feedback (back to QMSM1), <b style="color:#1ee0e0">cyan</b> = SCADA, <b style="color:#f5c542">yellow</b> = hardwired pump wiring. Protocol names are typical training values, not site-verified.</div>
+   <div class="insp-note" style="margin-top:16px;border-color:#ffb020"><b style="color:#ffd58a">Training Note</b><br>
+   This electrical map represents the MR4 cooling system control hierarchy. QMSM1 is the Master PLC with redundant CPUs. QMSM2 and QCF1–QCF4 are slave panels. SCADA communicates through QMSM1 for monitoring and operator control. This map is for training and visualization only. It is not a detailed electrical wiring diagram. Actual wiring, I/O addresses, cable routing, MCC details, PLC logic, protection devices, and commissioning details must be verified from approved site electrical drawings.</div>`;
+}
+
+/* ===================== LAYER SYSTEM ===================== */
+const LAYERNAMES={process:'Process Flow',electrical:'Electrical Map',logic:'Control Logic',data:'Data Flow',fault:'Fault Trace',all:'All Layers'};
+let currentLayer='process';
+function setLayer(name){
+  currentLayer=name;
+  $$('.layerbtn').forEach(b=>b.classList.toggle('on',b.dataset.layer===name));
+  const sProc=(name==='process'||name==='all');
+  const sElec=(name!=='process');
+  const sData=(name==='data'||name==='all');
+  flows.forEach(f=>{f.tube.visible=sProc;});
+  pipeLabels.forEach(l=>l.visible=sProc);
+  elecObjs.forEach(o=>{o.visible=sElec;});
+  groups.ctrl.forEach(o=>{o.group.visible=sElec;});
+  comms.forEach(c=>c.nodes.forEach(m=>{m.visible=sData;}));
+  ['logic','data','fault'].forEach(k=>{const el=$('#'+k+'Panel');if(el)el.classList.toggle('show',name===k);});
+  renderLayerLegend(name);
+  const ll=$('#layerLegend');if(ll)ll.classList.add('show');
+  if(name==='fault')renderFaultTrace();
+  const sl=$('#sLayer');if(sl)sl.textContent=LAYERNAMES[name];
+}
+function renderLayerLegend(name){
+  const el=$('#layerLegend');if(!el)return;
+  const C={
+    process:'<b>Process Flow</b><i style="background:#ff6a3d"></i>R-22 refrigerant<i style="background:#1ee0e0"></i>Glycol-water',
+    electrical:'<b>Electrical Map</b><i style="background:#ffb020"></i>Master PLC<i style="background:#37b6ff"></i>Slave<i style="background:#1ee0e0"></i>SCADA<i style="background:#f5c542"></i>Hardwired',
+    logic:'<b>Control Logic</b><i style="background:#3b82f6"></i>Command<i style="background:#22d27e"></i>Feedback<i style="background:#1ee0e0"></i>SCADA',
+    data:'<b>Data Flow</b><i style="background:#3b82f6"></i>Command<i style="background:#22d27e"></i>Feedback<i style="background:#ff4d4f"></i>Alarm<i style="background:#1ee0e0"></i>SCADA',
+    fault:'<b>Fault Trace</b><i style="background:#ff4d4f"></i>Fault → detection → QMSM1 → SCADA',
+    all:'<b>All Layers</b><i style="background:#ff6a3d"></i>R-22<i style="background:#1ee0e0"></i>Glycol<i style="background:#3b82f6"></i>Cmd<i style="background:#22d27e"></i>Feedback<i style="background:#ff4d4f"></i>Alarm<i style="background:#1ee0e0"></i>SCADA'
+  };
+  el.innerHTML=C[name]||'';
+}
+function classifyTrace(a){
+  const s=(a.t+' '+a.d).toLowerCase();
+  if(s.indexOf('discharge')>=0||s.indexOf('high-pressure')>=0||s.indexOf('high pressure')>=0)
+    return{title:'High Discharge Pressure',src:'Compressor discharge side ('+a.t+')',sig:'HP pressure feedback',panel:'QMSM1',dec:'High-pressure alarm + compressor protection logic',scada:'High Discharge Pressure',act:'Check condenser operation, fan status, refrigerant conditions and compressor loading.'};
+  if(s.indexOf('receiver')>=0)
+    return{title:'Low Receiver Level',src:'Liquid Receiver',sig:'Level transmitter',panel:'QMSM1',dec:'Low-level alarm',scada:'Receiver Low Level',act:'Check liquid supply, valve status, leakage indications and operating demand.'};
+  if(s.indexOf('glycol')>=0)
+    return{title:'Low Glycol Concentration',src:'P.H.E / glycol-water circuit',sig:'Glycol concentration / freeze-risk feedback',panel:'QMSM1',dec:'Freeze-risk warning',scada:'Low Glycol Concentration',act:'Verify glycol concentration and correct the mixture before low-temperature operation.'};
+  if(s.indexOf('condenser')>=0||s.indexOf('efficiency')>=0)
+    return{title:'Poor Condenser Efficiency',src:'Condenser system ('+a.t+')',sig:'Condenser efficiency / high HP trend',panel:'QMSM1 / condenser monitoring',dec:'Raise warning and monitor HP',scada:'Poor Condenser Efficiency',act:'Check fan operation, coil cleanliness, airflow and chemical treatment.'};
+  if(s.indexOf('temperature')>=0||s.indexOf('circuit')>=0)
+    return{title:'Circuit High Temperature',src:'Cooling circuit / production area ('+a.t+')',sig:'Temperature feedback',panel:'QCF panel → QMSM1',dec:'Increase cooling demand, or alarm if temperature stays high',scada:'Circuit High Temperature',act:'Check load condition, air coolers, valves, compressor staging and sensor feedback.'};
+  return{title:a.t,src:a.t,sig:'Equipment feedback',panel:'QMSM1',dec:'Alarm raised',scada:a.d,act:'Investigate per approved site procedure.'};
+}
+function ftCard(x){
+  const step=(l,v,c)=>'<div class="ft-step"><span class="ft-l">'+l+'</span><span class="ft-v" style="color:'+(c||'#dce8f5')+'">'+v+'</span></div>';
+  return '<div class="ft-card"><div class="ft-title">'+x.title+'</div>'+
+    step('Fault source',x.src)+step('Detecting signal',x.sig)+step('Receiving panel',x.panel,'#37b6ff')+
+    step('QMSM1 decision',x.dec,'#ffd58a')+step('SCADA alarm',x.scada,'#ff7173')+step('Recommended action',x.act)+'</div>';
+}
+function renderFaultTrace(){
+  const el=$('#faultTraceBody');if(!el)return;
+  const arr=alarmsArr();
+  if(!arr.length){el.innerHTML='<div class="ft-empty">No active fault trace. Enable a fault from Faults mode to view the signal path.</div>';return;}
+  el.innerHTML=arr.map(a=>ftCard(classifyTrace(a))).join('');
+}
+
+function boot(){
+  try{
+    initScene();
+    initCharts();
+    buildTables(); buildDiagram(); buildPHEModal(); buildElecMap();
+    wireUI();
+    setLayer('process');
+    simTick();
+    setTimeout(()=>$('#loader').classList.add('hide'),500);
+  }catch(err){
+    console.error(err);
+    $('#loader').innerHTML='<div class="ld"><p style="color:#ff5a4d">Initialization error: '+err.message+'</p></div>';
+  }
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+</script>
+<!-- ============ MR4 QUICK GUIDE (usage help only — no system data changed) ============ -->
+<style>
+#mr4Guide{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;
+  padding:20px;background:rgba(4,9,15,.82);backdrop-filter:blur(5px)}
+#mr4Guide.show{display:flex}
+#mr4Guide .gcard{width:min(560px,96vw);max-height:88vh;overflow:auto;border-radius:18px;
+  background:linear-gradient(180deg,#11202f,#0b141d);border:1px solid #284563;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+#mr4Guide .gh{padding:22px 22px 14px;border-bottom:1px solid #1d3146;display:flex;align-items:center;gap:13px}
+#mr4Guide .gh .gi{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-weight:800;
+  font-family:monospace;color:#04222e;background:linear-gradient(135deg,#27c6ff,#0c6fa0);box-shadow:0 0 22px rgba(39,198,255,.45)}
+#mr4Guide h3{margin:0;color:#fff;font-size:19px}
+#mr4Guide .gh small{color:#8aa6c0;font-family:monospace;letter-spacing:1.4px;font-size:11px}
+#mr4Guide .gb{padding:8px 22px 20px}
+#mr4Guide .grow{display:flex;gap:13px;padding:13px 0;border-bottom:1px solid rgba(29,49,70,.7)}
+#mr4Guide .grow:last-child{border-bottom:0}
+#mr4Guide .gk{flex:none;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:16px;
+  background:#0e2233;border:1px solid #284563}
+#mr4Guide .gt b{display:block;color:#e7f1fb;font-size:14px;margin-bottom:2px}
+#mr4Guide .gt span{color:#8aa6c0;font-size:12.5px;line-height:1.55}
+#mr4Guide .gfoot{padding:0 22px 22px;display:flex;justify-content:flex-end}
+#mr4Guide .gbtn{background:linear-gradient(180deg,#27c6ff,#0e9fd6);color:#04222e;font-weight:700;
+  border:0;border-radius:11px;padding:11px 26px;font-size:14px;cursor:pointer;font-family:monospace;letter-spacing:.6px}
+</style>
+<div id="mr4Guide" role="dialog" aria-modal="true">
+  <div class="gcard">
+    <div class="gh">
+      <div class="gi">MR4</div>
+      <div><h3>Welcome, Engineer 👋</h3><small>HOW TO USE THIS COOLING TWIN</small></div>
+    </div>
+    <div class="gb">
+      <div class="grow"><div class="gk">🖱️</div><div class="gt"><b>Move around the 3D model</b><span>Drag to rotate · scroll wheel to zoom · right-drag to pan.</span></div></div>
+      <div class="grow"><div class="gk">👆</div><div class="gt"><b>Inspect any equipment</b><span>Click a compressor, condenser, vessel or pump to open its live data card.</span></div></div>
+      <div class="grow"><div class="gk">🧭</div><div class="gt"><b>Switch layers</b><span>Use the top layer buttons (Process · Hierarchy and others) to focus on one system at a time.</span></div></div>
+      <div class="grow"><div class="gk">⏯️</div><div class="gt"><b>Run or pause</b><span>The “Stop / Run Simulation” button freezes or resumes the live behaviour.</span></div></div>
+      <div class="grow"><div class="gk">📊</div><div class="gt"><b>Read the side panel</b><span>Running counts, energy, discharge pressure and alarms update on the left as the model runs.</span></div></div>
+      <div class="grow"><div class="gk">❓</div><div class="gt"><b>Reopen this guide anytime</b><span>Press the “Guide” button in the top bar whenever you need a reminder.</span></div></div>
+    </div>
+    <div class="gfoot"><button class="gbtn" id="mr4GuideClose">Start exploring →</button></div>
+  </div>
+</div>
+<script>
+(function(){
+  var g=document.getElementById('mr4Guide'),
+      open=function(){g.classList.add('show');},
+      close=function(){g.classList.remove('show');};
+  var btn=document.getElementById('btnGuide'); if(btn) btn.addEventListener('click',open);
+  var cl=document.getElementById('mr4GuideClose'); if(cl) cl.addEventListener('click',close);
+  g.addEventListener('click',function(e){if(e.target===g)close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+  // show once shortly after load (after the init loader clears)
+  setTimeout(open,1400);
+})();
+</script>
+</body>
+</html>
